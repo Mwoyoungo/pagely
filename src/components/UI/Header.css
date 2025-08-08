@@ -60,3 +60,53 @@
 .user-avatar:hover {
   transform: scale(1.1);
 }
+
+.auth-btn {
+  background: #4ecdc4;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 25px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+
+.auth-btn:hover {
+  background: #26c6da;
+  transform: translateY(-1px);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .header {
+    padding: 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  .logo {
+    font-size: 1.3rem;
+  }
+  
+  .user-actions {
+    gap: 0.75rem;
+  }
+  
+  .my-docs-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+  }
+  
+  .auth-btn {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.8rem;
+  }
+  
+  .user-avatar {
+    width: 35px;
+    height: 35px;
+    font-size: 0.8rem;
+  }
+}

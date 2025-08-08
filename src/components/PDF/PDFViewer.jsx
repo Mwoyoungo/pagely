@@ -3,6 +3,7 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { useHighlighting } from '../../hooks/useHighlighting';
 import InteractionBubble from '../Collaboration/InteractionBubble';
+import HelpRequestBubble from '../Collaboration/HelpRequestBubble';
 import Highlight from './Highlight';
 import './PDFViewer.css';
 
@@ -13,7 +14,7 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 // Configure PDF.js worker - use local worker file
 pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
 
-const PDFViewer = ({ document: pdfDocument, onTextSelection, onOpenHelp }) => {
+const PDFViewer = ({ document: pdfDocument, onTextSelection, onOpenHelp, onOpenRecord, onVoiceRecorded, onHighlightsChange, isHelperMode }) => {
   const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [scale, setScale] = useState(1.2);
@@ -32,8 +33,32 @@ const PDFViewer = ({ document: pdfDocument, onTextSelection, onOpenHelp }) => {
     cancelHighlight,
     getHighlightsForPage,
     findOverlappingHighlight,
-    addHelpToHighlight
+    addHelpToHighlight,
+    addVoiceExplanation
   } = useHighlighting(pdfDocument);
+
+  // Handle recording help for other students
+  const handleRecordHelp = (highlight) => {
+    console.log('handleRecordHelp called for highlight:', highlight.id);
+    // Set the highlight as the one we're helping with
+    onTextSelection(highlight.text, { 
+      x: highlight.position.x, 
+      y: highlight.position.y,
+      highlightId: highlight.id,
+      pageNumber: highlight.pageNumber,
+      isRecordingHelp: true // Flag to indicate we're recording help
+    });
+    
+    // Open recording popup with voice explanation function
+    console.log('Opening recording popup...');
+    setTimeout(() => {
+      onOpenRecord();
+      // Pass the addVoiceExplanation function to the parent
+      if (onVoiceRecorded) {
+        window.currentAddVoiceExplanation = addVoiceExplanation;
+      }
+    }, 100);
+  };
 
   // PDF Document handlers
   const onDocumentLoadSuccess = ({ numPages }) => {
@@ -156,6 +181,13 @@ const PDFViewer = ({ document: pdfDocument, onTextSelection, onOpenHelp }) => {
     globalDoc.addEventListener('mouseup', handleMouseUp);
     return () => globalDoc.removeEventListener('mouseup', handleMouseUp);
   }, [highlightMode, pageNumber]);
+
+  // Notify parent when highlights change
+  useEffect(() => {
+    if (onHighlightsChange) {
+      onHighlightsChange(highlights);
+    }
+  }, [highlights, onHighlightsChange]);
 
   if (!pdfDocument || !pdfDocument.url) {
     return (
@@ -286,6 +318,22 @@ const PDFViewer = ({ document: pdfDocument, onTextSelection, onOpenHelp }) => {
                 }}
               />
             )}
+
+            {/* Render help request bubbles for highlights needing help (only in helper mode) */}
+            {isHelperMode && getHighlightsForPage(pageNumber)
+              .filter(highlight => highlight.needsHelp)
+              .map(highlight => (
+                <HelpRequestBubble
+                  key={`help-${highlight.id}`}
+                  highlight={highlight}
+                  onRecordHelp={handleRecordHelp}
+                  style={{
+                    left: `${(highlight.position.x + highlight.position.width/2) * 100}%`,
+                    top: `${(highlight.position.y + highlight.position.height/2) * 100}%`
+                  }}
+                />
+              ))
+            }
 
             {/* Render interaction bubbles for current page */}
             {pdfDocument.interactions

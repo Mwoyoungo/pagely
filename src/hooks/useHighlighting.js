@@ -39,7 +39,8 @@ export const useHighlighting = (pdfDocument) => {
     const updatedHighlight = {
       ...highlight,
       hasHelp: !!helpRequest,
-      helpRequests: helpRequest ? [helpRequest] : highlight.helpRequests
+      helpRequests: helpRequest ? [helpRequest] : highlight.helpRequests,
+      needsHelp: !helpRequest // Mark as needing help if no help provided yet
     };
 
     setHighlights(prev => {
@@ -53,12 +54,22 @@ export const useHighlighting = (pdfDocument) => {
     setPendingHighlight(null);
     
     if (helpRequest) {
-      showNotification('Highlight saved and help requested!', 'success');
+      showNotification('Help request sent! Other students will see this and can record explanations.', 'success');
+      
+      // Simulate help request appearing for other students after 3 seconds
+      setTimeout(() => {
+        showNotification('Another student is viewing your help request...', 'info');
+        
+        // After 5 seconds, simulate the help bubble appearing for helpers
+        setTimeout(() => {
+          showNotification('🤚 Help requests are now visible for other students to see and record explanations!', 'success');
+        }, 2000);
+      }, 3000);
     } else {
       showNotification('Highlight saved!', 'success');
     }
 
-    // In real app: persist to database
+    // In real app: persist to database and notify other users
     console.log('Saving highlight:', updatedHighlight);
   }, [showNotification]);
 
@@ -97,6 +108,7 @@ export const useHighlighting = (pdfDocument) => {
         return {
           ...highlight,
           hasHelp: true,
+          needsHelp: false, // No longer needs help
           helpRequests: [...highlight.helpRequests, helpRequest]
         };
       }
@@ -104,6 +116,36 @@ export const useHighlighting = (pdfDocument) => {
     }));
 
     showNotification('Help added to highlight!', 'success');
+  }, [showNotification]);
+
+  // Add voice explanation to highlight (called when someone records help)
+  const addVoiceExplanation = useCallback((highlightId, audioBlob, explanation) => {
+    // Create audio URL (in real app, upload to server)
+    const audioUrl = URL.createObjectURL(audioBlob);
+    
+    const voiceExplanation = {
+      id: Date.now().toString(),
+      type: 'voice_explanation',
+      audioUrl,
+      explanation: explanation || 'Voice explanation',
+      recordedBy: 'Helper Student', // In real app, get from auth
+      recordedAt: new Date().toISOString(),
+      duration: 0 // Could calculate from blob
+    };
+
+    setHighlights(prev => prev.map(highlight => {
+      if (highlight.id === highlightId) {
+        return {
+          ...highlight,
+          hasHelp: true,
+          needsHelp: false,
+          voiceExplanations: [...(highlight.voiceExplanations || []), voiceExplanation]
+        };
+      }
+      return highlight;
+    }));
+
+    showNotification('Voice explanation added! Students can now hear your help.', 'success');
   }, [showNotification]);
 
   return {
@@ -114,6 +156,7 @@ export const useHighlighting = (pdfDocument) => {
     cancelHighlight,
     getHighlightsForPage,
     findOverlappingHighlight,
-    addHelpToHighlight
+    addHelpToHighlight,
+    addVoiceExplanation
   };
 };

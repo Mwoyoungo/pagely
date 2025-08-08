@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Highlight & Record</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    /* Rustic Emojicon Styling */
+    body {
+      font-family: 'Comic Sans MS', 'Marker Felt', cursive;
+      background: linear-gradient(135deg, #FFF5E0 0%, #FFD1DC 50%, #E0F9FF 100%);
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.85);
+      padding: 25px;
+      border-radius: 20px;
+      box-shadow: 
+        0 4px 15px rgba(0, 0, 0, 0.1),
+        0 0 0 5px #FFD166,
+        0 0 0 10px rgba(255, 209, 102, 0.3);
+      max-width: 600px;
+      width: 90%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .container::before {
+      content: "✨";
+      position: absolute;
+      top: -15px;
+      right: -15px;
+      font-size: 3rem;
+      opacity: 0.3;
+      transform: rotate(20deg);
+    }
+
+    #text-content {
+      font-size: 1.3rem;
+      line-height: 1.8;
+      margin-bottom: 30px;
+      color: #5F4B32;
+    }
+
+    #controls {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    button {
+      background: linear-gradient(135deg, #FF9A8B 0%, #FF6B95 100%);
+      border: none;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      color: white;
+      font-size: 1.5rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      position: relative;
+    }
+
+    button::after {
+      content: "";
+      position: absolute;
+      top: -5px;
+      left: -5px;
+      right: -5px;
+      bottom: -5px;
+      border-radius: 50%;
+      border: 2px dashed #FF9A8B;
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      transform: scale(1.1) rotate(5deg);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    button:hover::after {
+      opacity: 1;
+      top: -8px;
+      left: -8px;
+      right: -8px;
+      bottom: -8px;
+    }
+
+    .hidden {
+      opacity: 0;
+      transform: scale(0);
+      pointer-events: none;
+      position: absolute;
+    }
+
+    /* Highlight Styles */
+    .highlight {
+      background: linear-gradient(120deg, #F6D365 0%, #FDA085 100%);
+      padding: 3px 6px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin: 5px 0;
+      display: inline-block;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .highlight:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Animation for Recording */
+    @keyframes pulse {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
+      70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(255, 0, 0, 0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
+    }
+
+    .recording {
+      animation: pulse 1.5s infinite;
+      background: linear-gradient(135deg, #FF416C 0%, #FF4B2B 100%);
+    }
+
+    /* Highlights Container */
+    #highlights {
+      margin-top: 30px;
+      background: rgba(255, 255, 255, 0.7);
+      padding: 15px;
+      border-radius: 15px;
+      border: 2px dotted #FF9A8B;
+    }
+
+    .highlight-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 10px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    .highlight-item:hover {
+      transform: translateX(5px);
+    }
+
+    .highlight-text {
+      flex-grow: 1;
+      margin-right: 10px;
+      color: #5F4B32;
+    }
+
+    /* Tooltip */
+    .tooltip {
+      position: relative;
+      display: inline-block;
+    }
+
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 120px;
+      background-color: #FF9A8B;
+      color: white;
+      text-align: center;
+      border-radius: 6px;
+      padding: 5px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .tooltip:hover .tooltiptext {
+      visibility: visible;
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 style="text-align: center; color: #FF6B95; text-shadow: 2px 2px 0px white;">🎤 Highlight & Speak 🎧</h1>
+    <div id="text-content">
+      <p>✨ Highlight any text below and record your voice! ✨</p>
+      <p>Try selecting this sentence to see the magic microphone appear! Then click it to record your voice. When you're done, click again to stop. The play button will appear so you can hear your recording!</p>
+    </div>
+    <div id="controls">
+      <button id="record-btn" class="hidden tooltip">
+        <i class="fas fa-microphone"></i>
+        <span class="tooltiptext">Record Voice</span>
+      </button>
+      <button id="play-btn" class="hidden tooltip">
+        <i class="fas fa-play"></i>
+        <span class="tooltiptext">Play Recording</span>
+      </button>
+    </div>
+    <div id="highlights"></div>
+  </div>
+
+  <script>
+    let mediaRecorder;
+    let audioChunks = [];
+    let selectedText = '';
+    let audioBlob;
+    let currentHighlight = null;
+
+    // Capture selected text
+    document.addEventListener('mouseup', () => {
+      const selection = window.getSelection();
+      selectedText = selection.toString();
+      
+      if (selectedText) {
+        // Remove any existing temporary highlights
+        const existingHighlights = document.querySelectorAll('.temp-highlight');
+        existingHighlights.forEach(el => {
+          const parent = el.parentNode;
+          while (el.firstChild) parent.insertBefore(el.firstChild, el);
+          parent.removeChild(el);
+        });
+
+        // Highlight the selected text temporarily
+        const range = selection.getRangeAt(0);
+        const highlightSpan = document.createElement('span');
+        highlightSpan.className = 'temp-highlight highlight';
+        range.surroundContents(highlightSpan);
+        
+        // Show record button with animation
+        const recordBtn = document.getElementById('record-btn');
+        recordBtn.classList.remove('hidden');
+        recordBtn.style.transition = 'none';
+        recordBtn.style.transform = 'scale(0)';
+        setTimeout(() => {
+          recordBtn.style.transition = 'all 0.3s ease';
+          recordBtn.style.transform = 'scale(1)';
+          recordBtn.style.opacity = '1';
+        }, 10);
+        
+        currentHighlight = highlightSpan;
+      }
+    });
+
+    // Record audio
+    document.getElementById('record-btn').addEventListener('click', async function() {
+      if (!selectedText) {
+        alert('Please highlight some text first.');
+        return;
+      }
+
+      if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          audioChunks = [];
+          mediaRecorder = new MediaRecorder(stream);
+          
+          mediaRecorder.ondataavailable = (event) => {
+            audioChunks.push(event.data);
+          };
+
+          mediaRecorder.onstop = () => {
+            audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+            
+            // Show play button with animation
+            const playBtn = document.getElementById('play-btn');
+            playBtn.classList.remove('hidden');
+            playBtn.style.transform = 'scale(0)';
+            setTimeout(() => {
+              playBtn.style.transform = 'scale(1)';
+              playBtn.style.opacity = '1';
+            }, 10);
+            
+            // Save the highlight permanently
+            saveHighlight(selectedText, audioBlob);
+            
+            // Remove temporary highlight
+            if (currentHighlight) {
+              const parent = currentHighlight.parentNode;
+              while (currentHighlight.firstChild) parent.insertBefore(currentHighlight.firstChild, currentHighlight);
+              parent.removeChild(currentHighlight);
+              currentHighlight = null;
+            }
+          };
+
+          mediaRecorder.start();
+          this.classList.add('recording');
+          this.innerHTML = '<i class="fas fa-stop"></i><span class="tooltiptext">Stop Recording</span>';
+        } catch (error) {
+          console.error('Error accessing microphone:', error);
+          alert('Could not access microphone. Please check permissions.');
+        }
+      } else {
+        mediaRecorder.stop();
+        this.classList.remove('recording');
+        this.innerHTML = '<i class="fas fa-microphone"></i><span class="tooltiptext">Record Voice</span>';
+        
+        // Stop all tracks in the stream
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+      }
+    });
+
+    // Play audio
+    document.getElementById('play-btn').addEventListener('click', () => {
+      if (audioBlob) {
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        audio.play();
+        
+        // Add visual feedback while playing
+        const playBtn = document.getElementById('play-btn');
+        playBtn.innerHTML = '<i class="fas fa-volume-up"></i><span class="tooltiptext">Playing...</span>';
+        playBtn.style.background = 'linear-gradient(135deg, #4CAF50 0%, #8BC34A 100%)';
+        
+        audio.onended = () => {
+          playBtn.innerHTML = '<i class="fas fa-play"></i><span class="tooltiptext">Play Recording</span>';
+          playBtn.style.background = 'linear-gradient(135deg, #FF9A8B 0%, #FF6B95 100%)';
+        };
+      }
+    });
+
+    // Save highlight and audio
+    function saveHighlight(text, audio) {
+      const highlightsContainer = document.getElementById('highlights');
+      const highlightDiv = document.createElement('div');
+      highlightDiv.className = 'highlight-item';
+      
+      highlightDiv.innerHTML = `
+        <div class="highlight-text">"${text}"</div>
+        <button class="play-highlight" title="Play Recording">
+          <i class="fas fa-play"></i>
+        </button>
+      `;
+      
+      const playButton = highlightDiv.querySelector('.play-highlight');
+      playButton.addEventListener('click', () => {
+        const audioUrl = URL.createObjectURL(audio);
+        const audioElement = new Audio(audioUrl);
+        audioElement.play();
+        
+        // Visual feedback
+        playButton.innerHTML = '<i class="fas fa-volume-up"></i>';
+        playButton.style.background = 'linear-gradient(135deg, #4CAF50 0%, #8BC34A 100%)';
+        
+        audioElement.onended = () => {
+          playButton.innerHTML = '<i class="fas fa-play"></i>';
+          playButton.style.background = 'linear-gradient(135deg, #FF9A8B 0%, #FF6B95 100%)';
+        };
+      });
+      
+      highlightsContainer.prepend(highlightDiv);
+      
+      // Animate the new highlight
+      highlightDiv.style.transform = 'translateY(-20px)';
+      highlightDiv.style.opacity = '0';
+      setTimeout(() => {
+        highlightDiv.style.transform = 'translateY(0)';
+        highlightDiv.style.opacity = '1';
+      }, 10);
+    }
+  </script>
+</body>
+</html>

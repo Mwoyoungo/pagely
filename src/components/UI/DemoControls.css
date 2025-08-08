@@ -1,0 +1,124 @@
+.demo-controls {
+  position: fixed;
+  top: 100px;
+  left: 20px;
+  z-index: 1500;
+  background: rgba(0, 0, 0, 0.9);
+  border-radius: 12px;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.demo-toggle {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.demo-toggle:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.demo-panel {
+  padding: 1.5rem;
+  max-width: 300px;
+}
+
+.demo-panel h4 {
+  margin: 0 0 1rem 0;
+  color: #667eea;
+  font-size: 1.1rem;
+}
+
+.demo-panel p {
+  margin: 0 0 1rem 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.mode-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.mode-btn {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  padding: 1rem 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+  font-size: 0.8rem;
+  line-height: 1.2;
+}
+
+.mode-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.mode-btn.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.mode-btn small {
+  display: block;
+  font-size: 0.7rem;
+  opacity: 0.8;
+  margin-top: 0.2rem;
+}
+
+.instructions {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 3px solid #667eea;
+}
+
+.instructions strong {
+  color: #667eea;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.instructions ol {
+  margin: 0;
+  padding-left: 1.2rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.instructions li {
+  margin-bottom: 0.3rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .demo-controls {
+    left: 10px;
+    top: 80px;
+  }
+  
+  .demo-panel {
+    padding: 1rem;
+    max-width: 250px;
+  }
+  
+  .mode-buttons {
+    flex-direction: column;
+  }
+}

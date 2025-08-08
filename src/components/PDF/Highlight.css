@@ -13,12 +13,33 @@
 }
 
 .pdf-highlight.has-help {
-  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3);
+  box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.3);
+}
+
+.pdf-highlight.has-voice {
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.5);
+  animation: none;
+}
+
+.pdf-highlight.playing {
+  animation: playingPulse 0.8s ease-in-out infinite;
+  box-shadow: 0 0 15px rgba(76, 175, 80, 0.8);
 }
 
 @keyframes pendingPulse {
   0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
+}
+
+@keyframes playingPulse {
+  0%, 100% { 
+    transform: scale(1); 
+    box-shadow: 0 0 15px rgba(76, 175, 80, 0.8);
+  }
+  50% { 
+    transform: scale(1.02); 
+    box-shadow: 0 0 25px rgba(76, 175, 80, 1);
+  }
 }
 
 /* Help indicator */
@@ -97,6 +118,36 @@
 
 .tooltip-btn.view-btn:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+.tooltip-btn.play-btn {
+  background: #4caf50;
+  color: white;
+}
+
+.tooltip-btn.play-btn:hover:not(:disabled) {
+  background: #45a049;
+}
+
+.tooltip-btn.play-btn:disabled {
+  background: #81c784;
+  cursor: not-allowed;
+}
+
+.voice-explanation-info {
+  font-size: 0.7rem;
+  color: #4caf50;
+  text-align: center;
+  margin: 0.25rem 0;
+}
+
+.voice-count {
+  font-weight: bold;
+}
+
+.play-instruction {
+  opacity: 0.8;
+  font-style: italic;
 }
 
 @keyframes fadeInUp {

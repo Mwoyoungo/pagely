@@ -1,0 +1,280 @@
+.export-popup {
+  max-width: 500px;
+  min-height: 400px;
+}
+
+.export-interface {
+  text-align: center;
+}
+
+.export-interface h3 {
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.export-interface > p {
+  color: #666;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+/* Session Stats */
+.export-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.stat-card {
+  text-align: center;
+  padding: 0.5rem;
+}
+
+.stat-number {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #4ecdc4;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Format Selection */
+.export-formats {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.export-formats h4 {
+  margin-bottom: 1rem;
+  color: #333;
+  font-size: 1rem;
+}
+
+.format-option {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.format-option:hover {
+  border-color: #4ecdc4;
+  background: #f0fffe;
+}
+
+.format-option.selected {
+  border-color: #4ecdc4;
+  background: #f0fffe;
+  box-shadow: 0 2px 8px rgba(78, 205, 196, 0.2);
+}
+
+.format-icon {
+  font-size: 1.5rem;
+  margin-right: 1rem;
+  min-width: 2rem;
+  text-align: center;
+}
+
+.format-info {
+  flex-grow: 1;
+}
+
+.format-title {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.recommended-badge {
+  background: #4caf50;
+  color: white;
+  font-size: 0.65rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.format-description {
+  font-size: 0.8rem;
+  color: #666;
+  line-height: 1.3;
+}
+
+.format-radio {
+  margin-left: 1rem;
+}
+
+.format-radio input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+/* Document title */
+.export-title {
+  margin-bottom: 2rem;
+  text-align: left;
+}
+
+.export-title label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.document-title {
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  color: #333;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+}
+
+/* Export Actions */
+.export-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.cancel-btn, .export-btn {
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.cancel-btn {
+  background: #f8f9fa;
+  color: #666;
+  border: 1px solid #ddd;
+}
+
+.cancel-btn:hover:not(:disabled) {
+  background: #e9ecef;
+}
+
+.export-btn {
+  background: #4ecdc4;
+  color: white;
+  min-width: 180px;
+}
+
+.export-btn:hover:not(:disabled) {
+  background: #26c6da;
+  transform: translateY(-1px);
+}
+
+.export-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.cancel-btn:disabled, .export-btn:disabled {
+  opacity: 0.6;
+}
+
+/* No content message */
+.no-content-message {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  color: #856404;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.no-content-message p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* Spinner */
+.spinner.small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-left: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .export-popup {
+    max-width: 90vw;
+    margin: 1rem;
+  }
+  
+  .export-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+  
+  .stat-number {
+    font-size: 1.4rem;
+  }
+  
+  .stat-label {
+    font-size: 0.7rem;
+  }
+  
+  .format-option {
+    padding: 0.75rem;
+  }
+  
+  .format-icon {
+    font-size: 1.2rem;
+    margin-right: 0.75rem;
+  }
+  
+  .export-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .cancel-btn, .export-btn {
+    width: 100%;
+    max-width: 250px;
+  }
+}

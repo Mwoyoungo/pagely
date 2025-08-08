@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎤 Microphone Test - PagePop</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      max-width: 500px;
+      width: 90%;
+      text-align: center;
+      color: #333;
+    }
+
+    button {
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+      border: none;
+      color: white;
+      padding: 15px 30px;
+      font-size: 16px;
+      border-radius: 50px;
+      cursor: pointer;
+      margin: 10px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 107, 107, 0.6);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .recording {
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+
+    .status {
+      margin: 20px 0;
+      padding: 10px;
+      border-radius: 10px;
+      font-weight: bold;
+    }
+
+    .success { background: #d4edda; color: #155724; }
+    .error { background: #f8d7da; color: #721c24; }
+    .info { background: #d1ecf1; color: #0c5460; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎤 Microphone Test</h1>
+    <p>This tests the same microphone API that PagePop uses</p>
+    
+    <div id="status" class="status info">
+      Click "Test Microphone" to begin
+    </div>
+    
+    <button id="testBtn" onclick="testMicrophone()">
+      🎤 Test Microphone
+    </button>
+    
+    <button id="recordBtn" onclick="toggleRecording()" style="display: none;">
+      🔴 Start Recording
+    </button>
+    
+    <button id="playBtn" onclick="playRecording()" style="display: none;">
+      ▶️ Play Recording
+    </button>
+    
+    <div id="info" style="margin-top: 20px; font-size: 14px; color: #666;"></div>
+  </div>
+
+  <script>
+    let mediaRecorder;
+    let audioChunks = [];
+    let audioBlob;
+    let stream;
+
+    function updateStatus(message, type) {
+      const status = document.getElementById('status');
+      status.textContent = message;
+      status.className = `status ${type}`;
+    }
+
+    function updateInfo(message) {
+      document.getElementById('info').innerHTML = message;
+    }
+
+    async function testMicrophone() {
+      const testBtn = document.getElementById('testBtn');
+      testBtn.disabled = true;
+      testBtn.textContent = 'Testing...';
+      
+      updateStatus('Testing microphone access...', 'info');
+      updateInfo(`
+        <strong>Browser:</strong> ${navigator.userAgent.split(' ')[0]}<br>
+        <strong>Protocol:</strong> ${window.location.protocol}<br>
+        <strong>Host:</strong> ${window.location.host}<br>
+        <strong>MediaDevices:</strong> ${navigator.mediaDevices ? '✅ Available' : '❌ Not Available'}<br>
+        <strong>getUserMedia:</strong> ${navigator.mediaDevices?.getUserMedia ? '✅ Available' : '❌ Not Available'}
+      `);
+
+      try {
+        // Check if mediaDevices exists
+        if (!navigator.mediaDevices) {
+          throw new Error('MediaDevices API not supported - requires HTTPS on mobile browsers');
+        }
+
+        if (!navigator.mediaDevices.getUserMedia) {
+          throw new Error('getUserMedia not supported - try a different browser');
+        }
+
+        // Test microphone access
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        updateStatus('✅ Microphone access granted!', 'success');
+        document.getElementById('recordBtn').style.display = 'inline-block';
+        testBtn.style.display = 'none';
+        
+      } catch (error) {
+        console.error('Microphone test failed:', error);
+        updateStatus(`❌ ${error.message}`, 'error');
+        
+        // Add detailed error info
+        let errorDetails = '';
+        if (error.message.includes('MediaDevices API not supported')) {
+          errorDetails = '📱 Mobile browsers need HTTPS for microphone. Try:<br>1. Use localhost if possible<br>2. Set up HTTPS<br>3. Use desktop browser for testing';
+        } else if (error.name === 'NotAllowedError') {
+          errorDetails = 'Permission denied. Please allow microphone access and try again.';
+        } else if (error.name === 'NotFoundError') {
+          errorDetails = 'No microphone found on this device.';
+        } else if (error.name === 'NotSupportedError') {
+          errorDetails = 'Microphone not supported. Try HTTPS or localhost.';
+        }
+        
+        updateInfo(document.getElementById('info').innerHTML + `<br><br><strong>Solution:</strong><br>${errorDetails}`);
+        testBtn.disabled = false;
+        testBtn.textContent = '🎤 Retry Test';
+      }
+    }
+
+    function toggleRecording() {
+      const recordBtn = document.getElementById('recordBtn');
+      
+      if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+        // Start recording
+        audioChunks = [];
+        mediaRecorder = new MediaRecorder(stream);
+        
+        mediaRecorder.ondataavailable = (event) => {
+          audioChunks.push(event.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          updateStatus('✅ Recording saved! Click Play to hear it.', 'success');
+          document.getElementById('playBtn').style.display = 'inline-block';
+          recordBtn.textContent = '🔴 Start Recording';
+          recordBtn.classList.remove('recording');
+        };
+
+        mediaRecorder.start();
+        recordBtn.textContent = '⏹️ Stop Recording';
+        recordBtn.classList.add('recording');
+        updateStatus('🎤 Recording... Speak now!', 'info');
+        
+      } else {
+        // Stop recording
+        mediaRecorder.stop();
+      }
+    }
+
+    function playRecording() {
+      if (audioBlob) {
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        audio.play();
+        updateStatus('▶️ Playing your recording...', 'info');
+        
+        audio.onended = () => {
+          updateStatus('✅ Recording playback complete!', 'success');
+        };
+      }
+    }
+  </script>
+</body>
+</html>

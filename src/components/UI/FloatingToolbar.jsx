@@ -1,6 +1,6 @@
 import './FloatingToolbar.css';
 
-const FloatingToolbar = ({ onOpenHelp, onOpenRecord }) => {
+const FloatingToolbar = ({ onOpenHelp, onOpenRecord, onExportStudyNotes }) => {
   const toolbarButtons = [
     {
       id: 'highlight',
@@ -25,6 +25,13 @@ const FloatingToolbar = ({ onOpenHelp, onOpenRecord }) => {
       title: 'Record explanation',
       className: 'record-btn',
       onClick: onOpenRecord
+    },
+    {
+      id: 'export',
+      icon: '📤',
+      title: 'Export study notes',
+      className: 'export-btn',
+      onClick: onExportStudyNotes
     }
   ];
 
