@@ -1,0 +1,150 @@
+.recording-popup {
+  max-width: 400px;
+}
+
+.recording-interface {
+  text-align: center;
+}
+
+.recording-interface h3 {
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.recording-interface > p {
+  color: #666;
+  margin-bottom: 2rem;
+  font-size: 0.9rem;
+}
+
+.record-button {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: #ff6b6b;
+  border: none;
+  color: white;
+  font-size: 2rem;
+  cursor: pointer;
+  margin: 2rem 0 1rem 0;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.record-button:hover:not(:disabled) {
+  transform: scale(1.05);
+  background: #ff5252;
+}
+
+.record-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.record-button.recording {
+  background: #dc3545;
+  animation: recordPulse 1s infinite;
+}
+
+.record-status {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.recording-preview {
+  margin-top: 1rem;
+}
+
+.video-preview {
+  margin-bottom: 1.5rem;
+}
+
+.video-placeholder {
+  width: 100%;
+  height: 150px;
+  background: #f8f9fa;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.video-preview p {
+  color: #4ecdc4;
+  font-weight: 500;
+  margin: 0;
+}
+
+.recording-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.retry-btn, .upload-btn {
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.retry-btn {
+  background: #f8f9fa;
+  color: #666;
+  border: 1px solid #ddd;
+}
+
+.retry-btn:hover:not(:disabled) {
+  background: #e9ecef;
+}
+
+.upload-btn {
+  background: #4ecdc4;
+  color: white;
+}
+
+.upload-btn:hover:not(:disabled) {
+  background: #26c6da;
+}
+
+.retry-btn:disabled, .upload-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spinner.small {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .record-button {
+    width: 80px;
+    height: 80px;
+    font-size: 1.5rem;
+  }
+  
+  .recording-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .retry-btn, .upload-btn {
+    width: 100%;
+    max-width: 200px;
+  }
+}

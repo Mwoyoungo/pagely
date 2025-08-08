@@ -1,0 +1,79 @@
+.floating-toolbar {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background: white;
+  border-radius: 50px;
+  padding: 1rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  display: flex;
+  gap: 0.5rem;
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+}
+
+.toolbar-btn {
+  width: 50px;
+  height: 50px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.toolbar-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.toolbar-btn:active {
+  transform: translateY(0);
+}
+
+.highlight-btn {
+  background: #fff59d;
+  color: #f57f17;
+}
+
+.highlight-btn:hover {
+  background: #ffeb3b;
+}
+
+.help-btn {
+  background: #ff6b6b;
+  color: white;
+}
+
+.help-btn:hover {
+  background: #ff5252;
+}
+
+.record-btn {
+  background: #4ecdc4;
+  color: white;
+}
+
+.record-btn:hover {
+  background: #26c6da;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .floating-toolbar {
+    bottom: 1rem;
+    right: 1rem;
+    padding: 0.8rem;
+    gap: 0.3rem;
+  }
+  
+  .toolbar-btn {
+    width: 45px;
+    height: 45px;
+    font-size: 1rem;
+  }
+}

@@ -1,0 +1,189 @@
+.pdf-viewer {
+  flex: 1;
+  background: white;
+  position: relative;
+  overflow-y: auto;
+  padding: 2rem;
+}
+
+.pdf-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 1rem;
+  z-index: 100;
+  flex-wrap: wrap;
+}
+
+.page-navigation {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.page-info {
+  font-weight: 600;
+  color: #333;
+  min-width: 120px;
+  text-align: center;
+}
+
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.pdf-controls button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #e1e8ed;
+  background: white;
+  border-radius: 6px;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+
+.pdf-controls button:hover:not(:disabled) {
+  border-color: #1da1f2;
+  background: #f8f9fa;
+}
+
+.pdf-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pdf-controls span {
+  font-weight: 600;
+  color: #333;
+  min-width: 50px;
+  text-align: center;
+}
+
+.highlight-toggle {
+  background: #fff59d !important;
+  color: #f57f17;
+  font-weight: 600;
+}
+
+.highlight-toggle.active {
+  background: #f57f17 !important;
+  color: white;
+}
+
+.pdf-document-container {
+  display: flex;
+  justify-content: center;
+  background: #f5f7fa;
+  padding: 2rem 0;
+  min-height: 400px;
+}
+
+.pdf-document-container .react-pdf__Document {
+  max-width: 100%;
+}
+
+.pdf-page-container {
+  position: relative;
+  display: inline-block;
+  background: white;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.pdf-page-container .react-pdf__Page {
+  display: block !important;
+}
+
+.pdf-page-container .react-pdf__Page canvas {
+  border-radius: 8px;
+}
+
+/* Text layer styling for proper text selection */
+.pdf-page-container .react-pdf__Page__textContent {
+  border-radius: 8px;
+}
+
+.pdf-page-container .react-pdf__Page__textContent span {
+  color: transparent !important;
+  position: absolute;
+  white-space: nowrap;
+  cursor: text;
+  transform-origin: 0% 0%;
+}
+
+/* Enable text selection styling */
+.pdf-page-container .react-pdf__Page__textContent span::selection {
+  background: rgba(0, 123, 255, 0.3) !important;
+}
+
+/* Annotation layer positioning */
+.pdf-page-container .react-pdf__Page__annotationContent {
+  border-radius: 8px;
+}
+
+/* Error message styling */
+.error-message {
+  text-align: center;
+  padding: 2rem;
+  color: #ff6b6b;
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+  border-radius: 8px;
+  margin: 2rem 0;
+}
+
+.error-message button {
+  background: #ff6b6b;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: all 0.2s;
+}
+
+.error-message button:hover {
+  background: #ff5252;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .pdf-viewer {
+    padding: 1rem;
+  }
+  
+  .pdf-controls {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .page-navigation,
+  .zoom-controls {
+    justify-content: center;
+  }
+  
+  .pdf-controls button {
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .page-info {
+    min-width: auto;
+  }
+  
+  .pdf-document-container {
+    padding: 1rem;
+  }
+}
