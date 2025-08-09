@@ -12,6 +12,7 @@ import NotificationProvider, { useNotifications } from './contexts/NotificationC
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AuthModal from './components/Auth/AuthModal';
 import UserProfile from './components/Auth/UserProfile';
+import PublicFeed from './components/Feed/PublicFeed';
 
 function AppContent() {
   const [currentDocument, setCurrentDocument] = useState(null);
@@ -23,11 +24,25 @@ function AppContent() {
   const [isHelperMode, setIsHelperMode] = useState(false);
   const [currentHighlights, setCurrentHighlights] = useState([]);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showUploadMode, setShowUploadMode] = useState(false);
   const { showNotification } = useNotifications();
   const { currentUser } = useAuth();
 
   const handleDocumentUploaded = (docData) => {
     setCurrentDocument(docData);
+    setShowUploadMode(false); // Return to feed after upload
+  };
+
+  const handleShowUpload = () => {
+    setShowUploadMode(true);
+  };
+
+  const handleBackToFeed = () => {
+    if (showUploadMode) {
+      setShowUploadMode(false);
+    } else {
+      setCurrentDocument(null);
+    }
   };
 
   const handleTextSelection = (text, position) => {
@@ -100,10 +115,11 @@ function AppContent() {
   return (
     <div className="app">
         <Header 
-          currentDocument={currentDocument}
+          currentDocument={currentDocument || showUploadMode}
           onOpenMyDocs={() => openPopup('myDocs')}
           onOpenAuth={() => setShowAuthModal(true)}
           currentUser={currentUser}
+          onBackToFeed={handleBackToFeed}
         />
         
         <main className="main-container">
@@ -128,6 +144,13 @@ function AppContent() {
                 isHelperMode={isHelperMode}
               />
             </>
+          ) : showUploadMode ? (
+            <PDFUpload onDocumentUploaded={handleDocumentUploaded} />
+          ) : currentUser ? (
+            <PublicFeed 
+              onDocumentSelect={handleDocumentUploaded}
+              onUploadDocument={handleShowUpload}
+            />
           ) : (
             <PDFUpload onDocumentUploaded={handleDocumentUploaded} />
           )}

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Firebase Storage CORS Test</title>
+</head>
+<body>
+    <h1>Firebase Storage CORS Test</h1>
+    <input type="file" id="fileInput" accept=".pdf">
+    <button onclick="testUpload()">Test Upload</button>
+    <div id="result"></div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getStorage, ref, uploadBytes } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCqfZCkftiYPHwD2BFtN7BlzyTFHwn8Pdo",
+            authDomain: "kolab-7eac7.firebaseapp.com",
+            projectId: "kolab-7eac7",
+            storageBucket: "kolab-7eac7.firebasestorage.app",
+            messagingSenderId: "162153772326",
+            appId: "1:162153772326:web:64a647d66221326726bde7"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const storage = getStorage(app);
+
+        window.testUpload = async function() {
+            const fileInput = document.getElementById('fileInput');
+            const result = document.getElementById('result');
+            
+            if (!fileInput.files[0]) {
+                result.innerHTML = 'Please select a file first';
+                return;
+            }
+
+            try {
+                const file = fileInput.files[0];
+                const storageRef = ref(storage, 'test/' + file.name);
+                
+                result.innerHTML = 'Uploading...';
+                await uploadBytes(storageRef, file);
+                result.innerHTML = 'Upload successful! CORS is working.';
+            } catch (error) {
+                result.innerHTML = 'Error: ' + error.message;
+                console.error('Upload error:', error);
+            }
+        };
+    </script>
+</body>
+</html>

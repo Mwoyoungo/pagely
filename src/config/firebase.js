@@ -22,6 +22,12 @@ export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
 
+// Add CORS-friendly configuration
+const storageConfig = {
+  timeout: 120000, // 2 minutes timeout
+  maxRetries: 3
+};
+
 // Development mode - connect to emulators (optional)
 // Uncomment the following if you want to use Firebase emulators for development
 // if (import.meta.env.DEV && import.meta.env.VITE_USE_EMULATORS === 'true') {

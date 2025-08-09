@@ -9,6 +9,11 @@
   height: 80px;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+}
+
 .logo {
   font-size: 1.5rem;
   font-weight: bold;
@@ -76,6 +81,23 @@
 .auth-btn:hover {
   background: #26c6da;
   transform: translateY(-1px);
+}
+
+.back-btn {
+  background: #f8f9fa;
+  color: #1da1f2;
+  border: 1px solid #e1e8ed;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+
+.back-btn:hover {
+  background: #e3f2fd;
+  border-color: #1da1f2;
 }
 
 /* Mobile responsiveness */

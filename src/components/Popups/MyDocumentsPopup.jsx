@@ -1,44 +1,82 @@
+import { useState, useEffect } from 'react';
 import { useNotifications } from '../../contexts/NotificationContext';
+import { useAuth } from '../../contexts/AuthContext';
+import DocumentService from '../../services/documentService';
 import './MyDocumentsPopup.css';
 
 const MyDocumentsPopup = ({ isOpen, onClose, onDocumentSelect }) => {
   const { showNotification } = useNotifications();
+  const { currentUser } = useAuth();
+  const [documents, setDocuments] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // Mock documents data
-  const mockDocuments = [
-    {
-      id: 'ml-fundamentals',
-      title: 'ML Fundamentals.pdf',
-      lastStudied: '2 hours ago',
-      interactions: 5,
-      size: '2.4 MB'
-    },
-    {
-      id: 'statistics',
-      title: 'Statistics Guide.pdf',
-      lastStudied: 'Yesterday',
-      interactions: 12,
-      size: '1.8 MB'
-    },
-    {
-      id: 'research-methods',
-      title: 'Research Methods.pdf',
-      lastStudied: '3 days ago',
-      interactions: 3,
-      size: '3.1 MB'
+  // Load user's documents when popup opens
+  useEffect(() => {
+    if (isOpen && currentUser) {
+      loadUserDocuments();
     }
-  ];
+  }, [isOpen, currentUser]);
+
+  const loadUserDocuments = async () => {
+    if (!currentUser) return;
+    
+    setLoading(true);
+    try {
+      const userDocs = await DocumentService.getUserDocuments(currentUser.uid);
+      setDocuments(userDocs);
+    } catch (error) {
+      console.error('Error loading documents:', error);
+      showNotification('Failed to load documents', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  };
+
+  const formatDate = (timestamp) => {
+    if (!timestamp) return 'Unknown';
+    
+    try {
+      // Handle Firestore timestamp
+      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+
+      if (diffMins < 60) {
+        return `${diffMins} minutes ago`;
+      } else if (diffHours < 24) {
+        return `${diffHours} hours ago`;
+      } else if (diffDays < 7) {
+        return `${diffDays} days ago`;
+      } else {
+        return date.toLocaleDateString();
+      }
+    } catch (error) {
+      return 'Unknown';
+    }
+  };
 
   const loadDocument = (doc) => {
     onClose();
     
-    // Create mock document data similar to PDFUpload
+    // Convert Firebase document to format expected by PDFViewer
     const documentData = {
       id: doc.id,
       title: doc.title,
-      url: '/mock-pdf-url',
-      size: doc.size,
-      uploadedAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+      url: doc.pdfUrl,
+      size: doc.fileSize,
+      uploadedAt: doc.createdAt,
+      // Mock interactions for now - will be replaced with real highlights
       interactions: [
         {
           id: '1',
@@ -47,26 +85,14 @@ const MyDocumentsPopup = ({ isOpen, onClose, onDocumentSelect }) => {
           y: 0.2,
           type: 'voice_note',
           content: {
-            message: "Great explanation of this concept",
+            message: "Continue from where you left off",
             audioUrl: null
           },
-          userDisplayName: 'Sarah',
-          createdAt: new Date(Date.now() - 3600000).toISOString()
-        },
-        {
-          id: '2',
-          pageNumber: 1,
-          x: 0.6,
-          y: 0.4,
-          type: 'video_explanation',
-          content: {
-            title: 'Video Explanation',
-            videoUrl: null
-          },
-          userDisplayName: 'Mike',
-          createdAt: new Date(Date.now() - 7200000).toISOString()
+          userDisplayName: currentUser?.displayName || 'You',
+          createdAt: new Date().toISOString()
         }
-      ]
+      ],
+      highlights: [] // Will be loaded from Firestore highlights subcollection
     };
 
     onDocumentSelect(documentData);
@@ -90,24 +116,45 @@ const MyDocumentsPopup = ({ isOpen, onClose, onDocumentSelect }) => {
         
         <h3>My Documents</h3>
         
-        <div className="doc-grid">
-          {mockDocuments.map(doc => (
-            <div 
-              key={doc.id}
-              className="doc-item"
-              onClick={() => loadDocument(doc)}
-            >
-              <div className="doc-icon">📄</div>
-              <div className="doc-info">
-                <div className="doc-title">{doc.title}</div>
-                <div className="doc-meta">
-                  Last studied: {doc.lastStudied}<br />
-                  {doc.interactions} interactions • {doc.size}
+        {loading ? (
+          <div className="loading">
+            <div className="spinner" />
+            <p>Loading your documents...</p>
+          </div>
+        ) : documents.length > 0 ? (
+          <div className="doc-grid">
+            {documents.map(doc => (
+              <div 
+                key={doc.id}
+                className="doc-item"
+                onClick={() => loadDocument(doc)}
+              >
+                <div className="doc-icon">📄</div>
+                <div className="doc-info">
+                  <div className="doc-title">{doc.title}</div>
+                  <div className="doc-meta">
+                    Last activity: {formatDate(doc.lastActivity)}<br />
+                    {doc.totalHighlights || 0} highlights • {formatFileSize(doc.fileSize || 0)}
+                  </div>
+                  <div className="doc-stats">
+                    {doc.activeCollaborators > 1 && (
+                      <span className="collaborators">👥 {doc.activeCollaborators} collaborators</span>
+                    )}
+                    {doc.helpRequestsOpen > 0 && (
+                      <span className="help-requests">❓ {doc.helpRequestsOpen} help requests</span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state">
+            <div className="empty-icon">📚</div>
+            <h4>No documents yet</h4>
+            <p>Upload your first PDF to start collaborative learning!</p>
+          </div>
+        )}
         
         <div className="upload-new">
           <p>Want to study a new document?</p>

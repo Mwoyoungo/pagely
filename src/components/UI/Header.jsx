@@ -1,7 +1,7 @@
 import UserProfile from '../Auth/UserProfile';
 import './Header.css';
 
-const Header = ({ currentDocument, onOpenMyDocs, onOpenAuth, currentUser }) => {
+const Header = ({ currentDocument, onOpenMyDocs, onOpenAuth, currentUser, onBackToFeed }) => {
   // Mock live users for demonstration
   const liveUsers = [
     { id: 1, name: 'Sarah', initial: 'S', status: 'studying now', color: '#ff6b6b' },
@@ -11,7 +11,15 @@ const Header = ({ currentDocument, onOpenMyDocs, onOpenAuth, currentUser }) => {
 
   return (
     <header className="header">
-      <div className="logo">PagePop</div>
+      <div className="header-left">
+        {currentDocument && onBackToFeed ? (
+          <button className="back-btn" onClick={onBackToFeed}>
+            ← Back to Feed
+          </button>
+        ) : (
+          <div className="logo">PagePop</div>
+        )}
+      </div>
       
       <div className="user-actions">
         {currentUser ? (

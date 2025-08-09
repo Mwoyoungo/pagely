@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Users can only read/write their own profile
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Public documents readable by all authenticated users
+    match /documents/{docId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && 
+        (request.auth.uid == document.data.uploadedBy || 
+         request.auth.uid in document.data.collaborators);
+      allow delete: if request.auth != null && 
+         request.auth.uid == document.data.uploadedBy;
+    }
+    
+    // Highlights writable by all authenticated users
+    match /documents/{docId}/highlights/{highlightId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    
+    // Public feed readable by all authenticated users
+    match /publicFeed/{feedId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null; // Allow users to create feed items when uploading documents
+    }
+  }
+}

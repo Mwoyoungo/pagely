@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useNotifications } from '../../contexts/NotificationContext';
-import { v4 as uuidv4 } from 'uuid';
+import { useAuth } from '../../contexts/AuthContext';
+import DocumentService from '../../services/documentService';
 import './PDFUpload.css';
 
 // Create a simple mock audio URL for demo purposes
@@ -12,8 +13,10 @@ const createMockAudio = () => {
 
 const PDFUpload = ({ onDocumentUploaded }) => {
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef(null);
   const { showNotification } = useNotifications();
+  const { currentUser } = useAuth();
 
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
@@ -22,20 +25,43 @@ const PDFUpload = ({ onDocumentUploaded }) => {
       return;
     }
 
+    if (!currentUser) {
+      showNotification('Please sign in to upload documents', 'error');
+      return;
+    }
+
     setUploading(true);
+    setUploadProgress(0);
     
     try {
-      // Create URL for the uploaded file
-      const fileUrl = URL.createObjectURL(file);
+      // Extract metadata from file name
+      const metadata = {
+        title: file.name.replace('.pdf', ''),
+        subject: 'General', // TODO: Add subject selection UI
+        description: `Study document uploaded by ${currentUser.displayName || currentUser.email}`,
+        tags: [] // TODO: Add tags input UI
+      };
+
+      // Upload to Firebase
+      const documentData = await DocumentService.uploadDocument(
+        file, 
+        metadata, 
+        currentUser, 
+        (progress) => {
+          setUploadProgress(progress);
+        }
+      );
+
+      showNotification('Document uploaded successfully!', 'success');
       
-      // Mock document data structure
-      const documentData = {
-        id: uuidv4(),
-        title: file.name,
-        url: fileUrl, // This will work with react-pdf for local files
-        size: file.size,
-        uploadedAt: new Date().toISOString(),
-        // Mock interactions and highlights for demonstration
+      // Convert Firebase document to format expected by PDFViewer
+      const viewerDocument = {
+        id: documentData.id,
+        title: documentData.title,
+        url: documentData.pdfUrl,
+        size: documentData.fileSize,
+        uploadedAt: documentData.createdAt,
+        // Initialize with mock data for demo - will be replaced with real highlights from Firebase
         interactions: [
           {
             id: '1',
@@ -44,97 +70,37 @@ const PDFUpload = ({ onDocumentUploaded }) => {
             y: 0.2,
             type: 'voice_note',
             content: {
-              message: "Great explanation of this concept",
+              message: "Welcome to collaborative learning!",
               audioUrl: null
             },
-            userDisplayName: 'Sarah',
-            createdAt: new Date(Date.now() - 3600000).toISOString() // 1 hour ago
-          },
-          {
-            id: '2',
-            pageNumber: 1,
-            x: 0.6,
-            y: 0.4,
-            type: 'video_explanation',
-            content: {
-              title: 'Video Explanation',
-              videoUrl: null
-            },
-            userDisplayName: 'Mike',
-            createdAt: new Date(Date.now() - 7200000).toISOString() // 2 hours ago
+            userDisplayName: currentUser.displayName || 'You',
+            createdAt: new Date().toISOString()
           }
         ],
-        // Mock highlights with help requests for demo
         highlights: [
           {
             id: 'demo-highlight-1',
-            text: 'machine learning algorithms',
+            text: 'Start highlighting text to collaborate',
             pageNumber: 1,
-            position: { x: 0.2, y: 0.3, width: 0.25, height: 0.03 },
+            position: { x: 0.2, y: 0.3, width: 0.35, height: 0.03 },
             color: '#ffeb3b',
-            createdAt: new Date(Date.now() - 1800000).toISOString(), // 30 min ago
-            createdBy: 'student-alex',
+            createdAt: new Date().toISOString(),
+            createdBy: currentUser.uid,
             hasHelp: false,
-            needsHelp: true, // This will show help request bubble
-            helpRequests: [{
-              id: 'help-1',
-              type: 'explain',
-              title: '📝 Explain this concept',
-              requestedAt: new Date(Date.now() - 1800000).toISOString()
-            }]
-          },
-          {
-            id: 'demo-highlight-2', 
-            text: 'unsupervised learning patterns',
-            pageNumber: 1,
-            position: { x: 0.5, y: 0.6, width: 0.3, height: 0.03 },
-            color: '#ffeb3b',
-            createdAt: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-            createdBy: 'student-emma',
-            hasHelp: false,
-            needsHelp: true, // This will show help request bubble
-            helpRequests: [{
-              id: 'help-2',
-              type: 'example',
-              title: '💡 Give me an example',
-              requestedAt: new Date(Date.now() - 3600000).toISOString()
-            }]
-          },
-          {
-            id: 'demo-highlight-3',
-            text: 'neural network architecture',
-            pageNumber: 1,
-            position: { x: 0.15, y: 0.8, width: 0.35, height: 0.03 },
-            color: '#4caf50',
-            createdAt: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
-            createdBy: 'student-jordan',
-            hasHelp: true,
-            needsHelp: false, // Already has help - no help request bubble
-            helpRequests: [],
-            voiceExplanations: [{
-              id: 'voice-demo-1',
-              type: 'voice_explanation',
-              audioUrl: createMockAudio(), // Generate a short beep for demo
-              explanation: 'Neural networks are computational models inspired by biological neural networks...',
-              recordedBy: 'Helper Student',
-              recordedAt: new Date(Date.now() - 3600000).toISOString(),
-              duration: 15
-            }]
+            needsHelp: false,
+            helpRequests: []
           }
         ]
       };
 
-      // Simulate upload delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      showNotification('Document uploaded successfully!', 'success');
-      onDocumentUploaded(documentData);
+      onDocumentUploaded(viewerDocument);
       
     } catch (error) {
       console.error('Upload error:', error);
-      showNotification('Failed to upload document', 'error');
+      showNotification(error.message || 'Failed to upload document', 'error');
     } finally {
       setUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -156,8 +122,13 @@ const PDFUpload = ({ onDocumentUploaded }) => {
           
           {uploading && (
             <div className="upload-progress">
-              <div className="spinner" />
-              <p>Uploading...</p>
+              <div className="progress-bar">
+                <div 
+                  className="progress-fill" 
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+              <p>Uploading... {Math.round(uploadProgress)}%</p>
             </div>
           )}
         </div>
