@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNotifications } from '../../contexts/NotificationContext';
+import { useAuth } from '../../contexts/AuthContext';
+import ActiveUsersService from '../../services/activeUsersService';
 import './RecordingPopup.css';
 
-const RecordingPopup = ({ isOpen, onClose, position, isRecordingHelp = false, selectedText = '', onVoiceRecorded }) => {
+const RecordingPopup = ({ isOpen, onClose, position, isRecordingHelp = false, selectedText = '', onVoiceRecorded, currentDocument }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordedBlob, setRecordedBlob] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -18,6 +20,7 @@ const RecordingPopup = ({ isOpen, onClose, position, isRecordingHelp = false, se
   const levelIntervalRef = useRef(null);
   
   const { showNotification } = useNotifications();
+  const { currentUser } = useAuth();
 
   // Check microphone permissions on popup open and auto-start recording for help
   useEffect(() => {
@@ -198,6 +201,11 @@ const RecordingPopup = ({ isOpen, onClose, position, isRecordingHelp = false, se
       setIsRecording(true);
       setRecordingDuration(0);
       
+      // Update recording status for other users to see
+      if (currentUser && currentDocument?.id) {
+        ActiveUsersService.setRecordingStatus(currentDocument.id, currentUser.uid, true);
+      }
+      
       // Start duration timer
       durationIntervalRef.current = setInterval(() => {
         setRecordingDuration(prev => prev + 1);
@@ -224,6 +232,11 @@ const RecordingPopup = ({ isOpen, onClose, position, isRecordingHelp = false, se
     }
     
     setIsRecording(false);
+    
+    // Update recording status - no longer recording
+    if (currentUser && currentDocument?.id) {
+      ActiveUsersService.setRecordingStatus(currentDocument.id, currentUser.uid, false);
+    }
     
     // Clear timers
     if (durationIntervalRef.current) {

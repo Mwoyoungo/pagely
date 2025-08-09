@@ -185,6 +185,7 @@ function AppContent() {
           isRecordingHelp={isRecordingHelp}
           selectedText={selectedText}
           onVoiceRecorded={handleVoiceRecorded}
+          currentDocument={currentDocument}
         />
         
         <ExportPopup
