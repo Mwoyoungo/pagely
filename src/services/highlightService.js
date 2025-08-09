@@ -24,9 +24,25 @@ export class HighlightService {
   // Create a new highlight
   static async createHighlight(docId, highlightData, user) {
     try {
+      console.log('🎯 HighlightService.createHighlight called:', { docId, highlightData, userId: user.uid });
+
       if (!docId || !highlightData || !user) {
+        console.error('❌ Missing parameters:', { docId, highlightData, user });
         throw new Error('Document ID, highlight data, and user are required');
       }
+
+      // Clean the help request data to remove undefined fields
+      const cleanHelpRequest = highlightData.helpRequest ? {
+        ...highlightData.helpRequest,
+        position: highlightData.helpRequest.position ? {
+          x: highlightData.helpRequest.position.x,
+          y: highlightData.helpRequest.position.y,
+          width: highlightData.helpRequest.position.width,
+          height: highlightData.helpRequest.position.height,
+          pageNumber: highlightData.helpRequest.position.pageNumber
+          // Remove highlightId as it's undefined and not needed
+        } : null
+      } : null;
 
       const highlight = {
         text: highlightData.text,
@@ -42,7 +58,7 @@ export class HighlightService {
         
         // Help system
         needsHelp: highlightData.needsHelp || false,
-        helpRequest: highlightData.helpRequest || null,
+        helpRequest: cleanHelpRequest,
         
         // Voice explanations
         voiceExplanations: [],
@@ -53,11 +69,15 @@ export class HighlightService {
       };
 
       // Add to highlights subcollection
+      console.log('💾 Saving highlight to Firestore path:', `documents/${docId}/highlights`);
       const highlightsRef = collection(db, 'documents', docId, 'highlights');
       const docRef = await addDoc(highlightsRef, highlight);
+      console.log('✅ Highlight saved with ID:', docRef.id);
       
       // Update document stats
+      console.log('📊 Updating document stats...');
       await this.updateDocumentStats(docId, user.uid);
+      console.log('✅ Document stats updated');
       
       return {
         id: docRef.id,

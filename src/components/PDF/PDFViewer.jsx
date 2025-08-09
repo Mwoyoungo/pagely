@@ -24,10 +24,11 @@ const PDFViewer = ({ document: pdfDocument, onTextSelection, onOpenHelp, onOpenR
   const containerRef = useRef(null);
   const { showNotification } = useNotifications();
   
-  // Initialize highlighting system
+  // Initialize highlighting system with Firebase integration
   const {
     highlights,
     pendingHighlight,
+    loading: highlightsLoading,
     createHighlight,
     saveHighlight,
     cancelHighlight,
@@ -82,13 +83,21 @@ const PDFViewer = ({ document: pdfDocument, onTextSelection, onOpenHelp, onOpenR
 
     const range = selection.getRangeAt(0);
     const rect = range.getBoundingClientRect();
-    const containerRect = containerRef.current.getBoundingClientRect();
     
-    // Calculate relative position within the current page
-    const relativeX = (rect.left - containerRect.left) / containerRect.width;
-    const relativeY = (rect.top - containerRect.top) / containerRect.height;
-    const relativeWidth = rect.width / containerRect.width;
-    const relativeHeight = rect.height / containerRect.height;
+    // Find the page container for accurate positioning
+    const pageContainer = containerRef.current.querySelector('.pdf-page-container');
+    if (!pageContainer) {
+      console.error('Page container not found');
+      return;
+    }
+    
+    const pageRect = pageContainer.getBoundingClientRect();
+    
+    // Calculate relative position within the current page container
+    const relativeX = (rect.left - pageRect.left) / pageRect.width;
+    const relativeY = (rect.top - pageRect.top) / pageRect.height;
+    const relativeWidth = rect.width / pageRect.width;
+    const relativeHeight = rect.height / pageRect.height;
     
     // Get page number from the closest page element
     let containerElement = range.startContainer;
@@ -189,6 +198,37 @@ const PDFViewer = ({ document: pdfDocument, onTextSelection, onOpenHelp, onOpenR
     }
   }, [highlights, onHighlightsChange]);
 
+  // Listen for pending help requests from the help popup
+  useEffect(() => {
+    const checkPendingHelpRequest = async () => {
+      if (window.pendingHelpRequest && pendingHighlight) {
+        console.log('🎯 Processing pending help request:', window.pendingHelpRequest);
+        console.log('📍 Pending highlight position:', pendingHighlight.position);
+        
+        try {
+          // Save the pending highlight with the help request
+          const savedHighlight = await saveHighlight(pendingHighlight, window.pendingHelpRequest);
+          
+          if (savedHighlight) {
+            console.log('✅ Highlight saved successfully:', savedHighlight);
+            showNotification('✅ Highlight saved with help request! Other students can now see it.', 'success');
+          }
+        } catch (error) {
+          console.error('Error saving highlight with help request:', error);
+          showNotification('❌ Failed to save highlight: ' + error.message, 'error');
+        }
+        
+        // Clear the pending request
+        window.pendingHelpRequest = null;
+      }
+    };
+
+    // Check for pending help requests periodically
+    const interval = setInterval(checkPendingHelpRequest, 500);
+    
+    return () => clearInterval(interval);
+  }, [pendingHighlight, saveHighlight, showNotification]);
+
   if (!pdfDocument || !pdfDocument.url) {
     return (
       <div className="pdf-viewer">
@@ -271,8 +311,18 @@ const PDFViewer = ({ document: pdfDocument, onTextSelection, onOpenHelp, onOpenR
               loading={<div className="loading">Loading page...</div>}
             />
             
+            {/* Loading indicator for highlights */}
+            {highlightsLoading && (
+              <div className="highlights-loading">
+                <div className="spinner"></div>
+                <span>Loading collaborative highlights...</span>
+              </div>
+            )}
+            
             {/* Render highlights for current page */}
-            {getHighlightsForPage(pageNumber).map(highlight => (
+            {!highlightsLoading && getHighlightsForPage(pageNumber)
+              .filter(highlight => !pendingHighlight || highlight.id !== pendingHighlight.id) // Avoid duplicates
+              .map(highlight => (
               <Highlight
                 key={highlight.id}
                 highlight={highlight}
@@ -298,7 +348,7 @@ const PDFViewer = ({ document: pdfDocument, onTextSelection, onOpenHelp, onOpenR
             {/* Render pending highlight */}
             {pendingHighlight && pendingHighlight.pageNumber === pageNumber && (
               <Highlight
-                key={`pending-${pendingHighlight.id}`}
+                key={pendingHighlight.id}
                 highlight={pendingHighlight}
                 isPending={true}
                 onClick={() => {

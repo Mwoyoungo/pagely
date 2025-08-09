@@ -30,7 +30,7 @@ const HelpRequestPopup = ({ isOpen, onClose, selectedText, position, onHelpReque
     try {
       // Create help request object
       const helpRequest = {
-        id: Date.now().toString(),
+        id: `help_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         type: helpType.id,
         title: helpType.title,
         selectedText,

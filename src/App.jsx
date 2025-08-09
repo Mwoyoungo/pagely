@@ -52,10 +52,17 @@ function AppContent() {
     setIsRecordingHelp(position.isRecordingHelp || false);
   };
 
-  const handleHelpRequested = (helpRequest) => {
+  const handleHelpRequested = async (helpRequest) => {
     console.log('Help requested for highlight:', currentHighlightId, helpRequest);
-    // In real app: save help request to database and link to highlight
-    // For now, just log it
+    
+    // We need to get the saveHighlight function and create the highlight
+    // The issue is that App.jsx doesn't have access to the useHighlighting hook
+    // We need to restructure this to pass the saveHighlight function up from PDFViewer
+    
+    // For now, store the help request to be handled by PDFViewer
+    window.pendingHelpRequest = helpRequest;
+    
+    showNotification('Help request created! Processing...', 'info');
   };
 
   const handleVoiceRecorded = (audioBlob, addVoiceExplanationFn) => {

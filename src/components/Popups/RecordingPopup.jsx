@@ -242,13 +242,20 @@ const RecordingPopup = ({ isOpen, onClose, position, isRecordingHelp = false, se
     setUploading(true);
     
     try {
-      // Simulate upload
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      if (isRecordingHelp) {
-        showNotification('Thank you for helping! Your explanation has been attached to the highlighted text.', 'success');
-        onVoiceRecorded?.(recordedBlob, window.currentAddVoiceExplanation);
+      if (isRecordingHelp && window.currentAddVoiceExplanation) {
+        // Recording help for another student's highlight
+        showNotification('Uploading your voice explanation to Firebase...', 'info');
+        
+        // Call the addVoiceExplanation function passed from PDFViewer
+        await window.currentAddVoiceExplanation(
+          position.highlightId, // The highlight we're helping with
+          recordedBlob,        // The audio blob
+          `Voice explanation for: "${selectedText.slice(0, 50)}..."` // Description
+        );
+        
+        showNotification('🎉 Thank you for helping! Your explanation has been saved and other students can now hear it.', 'success');
       } else {
+        // Regular recording (not implemented yet - could be for general explanations)
         showNotification('Recording uploaded! Other students can now see your explanation.', 'success');
         onVoiceRecorded?.(recordedBlob);
       }
@@ -259,9 +266,12 @@ const RecordingPopup = ({ isOpen, onClose, position, isRecordingHelp = false, se
       setRecordedBlob(null);
       setIsRecording(false);
       
+      // Clean up the global function reference
+      window.currentAddVoiceExplanation = null;
+      
     } catch (error) {
       console.error('Upload error:', error);
-      showNotification('Failed to upload recording', 'error');
+      showNotification('❌ Failed to upload recording: ' + error.message, 'error');
     } finally {
       setUploading(false);
     }

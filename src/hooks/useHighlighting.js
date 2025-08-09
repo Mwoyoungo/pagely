@@ -1,18 +1,52 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNotifications } from '../contexts/NotificationContext';
-import { v4 as uuidv4 } from 'uuid';
+import { useAuth } from '../contexts/AuthContext';
+import HighlightService from '../services/highlightService';
 
 export const useHighlighting = (pdfDocument) => {
-  const [highlights, setHighlights] = useState(pdfDocument?.highlights || []);
+  const [highlights, setHighlights] = useState([]);
   const [pendingHighlight, setPendingHighlight] = useState(null);
+  const [loading, setLoading] = useState(false);
   const { showNotification } = useNotifications();
+  const { currentUser } = useAuth();
+
+  // Load highlights from Firebase when document changes
+  useEffect(() => {
+    if (!pdfDocument?.id) return;
+
+    setLoading(true);
+    
+    // Subscribe to real-time highlights for this document
+    const unsubscribe = HighlightService.subscribeToHighlights(
+      pdfDocument.id, 
+      (firebaseHighlights) => {
+        console.log('🔥 Firebase highlights received:', firebaseHighlights.length, 'highlights');
+        firebaseHighlights.forEach((highlight, index) => {
+          console.log(`📍 Highlight ${index + 1}:`, {
+            id: highlight.id,
+            text: highlight.text.slice(0, 30) + '...',
+            position: highlight.position,
+            pageNumber: highlight.pageNumber
+          });
+        });
+        setHighlights(firebaseHighlights);
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [pdfDocument?.id]);
 
   // Create a new highlight from text selection
   const createHighlight = useCallback((selectedText, position, pageNumber) => {
-    if (!selectedText.trim()) return null;
+    if (!selectedText.trim() || !currentUser) return null;
 
     const highlight = {
-      id: uuidv4(),
+      id: `pending_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Unique pending ID
       text: selectedText.trim(),
       pageNumber,
       position: {
@@ -22,56 +56,67 @@ export const useHighlighting = (pdfDocument) => {
         height: position.height || 0.03 // Default height
       },
       color: '#ffeb3b', // Default highlight color
-      createdAt: new Date().toISOString(),
-      createdBy: 'current-user', // In real app, get from auth context
-      hasHelp: false, // Will be true when help is requested/provided
-      helpRequests: []
+      needsHelp: false, // Can be updated when help is requested
+      helpRequest: null
     };
 
     // Set as pending highlight (will be saved when help is requested or dismissed)
     setPendingHighlight(highlight);
     
     return highlight;
-  }, []);
+  }, [currentUser]);
 
   // Save highlight permanently (called when help is requested or user confirms)
-  const saveHighlight = useCallback((highlight, helpRequest = null) => {
-    const updatedHighlight = {
-      ...highlight,
-      hasHelp: !!helpRequest,
-      helpRequests: helpRequest ? [helpRequest] : highlight.helpRequests,
-      needsHelp: !helpRequest // Mark as needing help if no help provided yet
-    };
-
-    setHighlights(prev => {
-      const existing = prev.find(h => h.id === highlight.id);
-      if (existing) {
-        return prev.map(h => h.id === highlight.id ? updatedHighlight : h);
-      }
-      return [...prev, updatedHighlight];
+  const saveHighlight = useCallback(async (highlight, helpRequest = null) => {
+    // Debug logging
+    console.log('🚀 saveHighlight called:', { 
+      docId: pdfDocument?.id, 
+      userId: currentUser?.uid,
+      highlight: highlight,
+      helpRequest: helpRequest 
     });
 
-    setPendingHighlight(null);
-    
-    if (helpRequest) {
-      showNotification('Help request sent! Other students will see this and can record explanations.', 'success');
-      
-      // Simulate help request appearing for other students after 3 seconds
-      setTimeout(() => {
-        showNotification('Another student is viewing your help request...', 'info');
-        
-        // After 5 seconds, simulate the help bubble appearing for helpers
-        setTimeout(() => {
-          showNotification('🤚 Help requests are now visible for other students to see and record explanations!', 'success');
-        }, 2000);
-      }, 3000);
-    } else {
-      showNotification('Highlight saved!', 'success');
+    if (!pdfDocument?.id || !currentUser) {
+      console.error('❌ Missing requirements:', { docId: pdfDocument?.id, user: currentUser });
+      showNotification('Error: Document ID or user authentication missing', 'error');
+      return null;
     }
 
-    // In real app: persist to database and notify other users
-    console.log('Saving highlight:', updatedHighlight);
-  }, [showNotification]);
+    try {
+      setLoading(true);
+      
+      const highlightData = {
+        ...highlight,
+        needsHelp: !!helpRequest,
+        helpRequest: helpRequest
+      };
+
+      // Clear pending highlight immediately to prevent duplicates
+      setPendingHighlight(null);
+
+      // Save to Firebase
+      const savedHighlight = await HighlightService.createHighlight(
+        pdfDocument.id, 
+        highlightData, 
+        currentUser
+      );
+
+      // Show success notification
+      if (helpRequest) {
+        showNotification('Help request sent! Other students can now see this and record explanations.', 'success');
+      } else {
+        showNotification('Highlight saved! Other students can now see your highlight.', 'success');
+      }
+
+      return savedHighlight;
+    } catch (error) {
+      console.error('Error saving highlight:', error);
+      showNotification('Failed to save highlight: ' + error.message, 'error');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [pdfDocument?.id, currentUser, showNotification]);
 
   // Cancel pending highlight
   const cancelHighlight = useCallback(() => {
@@ -119,38 +164,38 @@ export const useHighlighting = (pdfDocument) => {
   }, [showNotification]);
 
   // Add voice explanation to highlight (called when someone records help)
-  const addVoiceExplanation = useCallback((highlightId, audioBlob, explanation) => {
-    // Create audio URL (in real app, upload to server)
-    const audioUrl = URL.createObjectURL(audioBlob);
-    
-    const voiceExplanation = {
-      id: Date.now().toString(),
-      type: 'voice_explanation',
-      audioUrl,
-      explanation: explanation || 'Voice explanation',
-      recordedBy: 'Helper Student', // In real app, get from auth
-      recordedAt: new Date().toISOString(),
-      duration: 0 // Could calculate from blob
-    };
+  const addVoiceExplanation = useCallback(async (highlightId, audioBlob, explanation) => {
+    if (!pdfDocument?.id || !currentUser) return;
 
-    setHighlights(prev => prev.map(highlight => {
-      if (highlight.id === highlightId) {
-        return {
-          ...highlight,
-          hasHelp: true,
-          needsHelp: false,
-          voiceExplanations: [...(highlight.voiceExplanations || []), voiceExplanation]
-        };
-      }
-      return highlight;
-    }));
+    try {
+      setLoading(true);
+      
+      // Upload voice explanation to Firebase
+      await HighlightService.addVoiceExplanation(
+        pdfDocument.id,
+        highlightId, 
+        audioBlob, 
+        explanation || 'Voice explanation',
+        currentUser,
+        (progress) => {
+          // Could show upload progress here
+          console.log('Voice upload progress:', progress);
+        }
+      );
 
-    showNotification('Voice explanation added! Students can now hear your help.', 'success');
-  }, [showNotification]);
+      showNotification('Voice explanation uploaded! Students can now hear your help.', 'success');
+    } catch (error) {
+      console.error('Error adding voice explanation:', error);
+      showNotification('Failed to add voice explanation: ' + error.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [pdfDocument?.id, currentUser, showNotification]);
 
   return {
     highlights,
     pendingHighlight,
+    loading,
     createHighlight,
     saveHighlight,
     cancelHighlight,

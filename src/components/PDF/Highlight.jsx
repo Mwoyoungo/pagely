@@ -112,22 +112,26 @@ const Highlight = ({
             animation: isPlaying ? 'pulse 1s infinite' : 'none'
           }}
           onClick={handleClick}
+          title="Click to hear explanation"
         >
           {isPlaying ? '🔊' : '🎵'}
         </div>
-      ) : highlight.hasHelp ? (
+      ) : highlight.needsHelp ? (
         <div
-          className="help-indicator"
+          className="help-request-indicator"
           style={{
             position: 'absolute',
             left: `${parseFloat(style.left) + parseFloat(style.width)}%`,
             top: style.top,
             transform: 'translateX(-50%)',
-            zIndex: 12
+            zIndex: 12,
+            fontSize: '16px',
+            animation: 'bounce 2s infinite'
           }}
           onClick={handleClick}
+          title="Help requested - waiting for response"
         >
-          💡
+          🖐️
         </div>
       ) : null}
 
