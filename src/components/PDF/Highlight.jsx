@@ -26,9 +26,21 @@ const Highlight = ({
     if (isPlaying) return; // Prevent multiple plays
     
     console.log('🔊 Playing voice explanation for:', highlight.text.slice(0, 30));
+    console.log('🔊 Audio URL:', voiceExplanation.audioUrl);
     setIsPlaying(true);
     
-    const audio = new Audio(voiceExplanation.audioUrl);
+    const audio = new Audio();
+    // Set CORS mode to handle cross-origin audio
+    audio.crossOrigin = 'anonymous';
+    audio.src = voiceExplanation.audioUrl;
+    
+    audio.onloadstart = () => {
+      console.log('🔄 Audio loading started...');
+    };
+    
+    audio.oncanplay = () => {
+      console.log('✅ Audio can play');
+    };
     
     audio.onended = () => {
       setIsPlaying(false);
@@ -38,12 +50,19 @@ const Highlight = ({
     audio.onerror = (error) => {
       setIsPlaying(false);
       console.error('❌ Error playing voice explanation:', error);
+      console.error('❌ Audio error details:', audio.error);
     };
     
-    audio.play().catch(error => {
-      setIsPlaying(false);
-      console.error('❌ Failed to play voice explanation:', error);
-    });
+    audio.onloadeddata = () => {
+      console.log('📡 Audio data loaded, attempting to play...');
+      audio.play().catch(error => {
+        setIsPlaying(false);
+        console.error('❌ Failed to play voice explanation:', error);
+      });
+    };
+    
+    // Start loading the audio
+    audio.load();
   };
 
   const handleHelpRequest = (e) => {
