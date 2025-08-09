@@ -16,7 +16,14 @@
 }
 
 .help-request-bubble:hover {
-  transform: translate(-50%, -50%) scale(1.1);
+  transform: translate(-50%, -50%) scale(1.2);
+  background: linear-gradient(135deg, #ff5252, #e53e3e);
+  box-shadow: 0 6px 20px rgba(255, 82, 82, 0.6);
+}
+
+.help-request-bubble:active {
+  transform: translate(-50%, -50%) scale(1.05);
+  transition: transform 0.1s ease;
 }
 
 .help-pulse-ring {

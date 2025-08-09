@@ -37,12 +37,9 @@ const HelpRequestBubble = ({
           transform: 'translate(-50%, -50%)'
         }}
         onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => !isClicked && setIsHovered(false)}
-        onClick={() => {
-          setIsClicked(true);
-          setIsHovered(true);
-        }}
-        title={`Help needed: "${highlight.text.slice(0, 50)}..."`}
+        onMouseLeave={() => setIsHovered(false)}
+        onClick={handleRecordClick}
+        title={`🎤 Click to record help for: "${highlight.text.slice(0, 50)}..."`}
       >
         🤚
         <div className="help-pulse-ring" />
