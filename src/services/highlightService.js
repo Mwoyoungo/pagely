@@ -204,7 +204,7 @@ export class HighlightService {
                 recordedBy: user.uid,
                 recordedByName: user.displayName || user.email,
                 recordedByAvatar: user.photoURL || null,
-                recordedAt: serverTimestamp(),
+                recordedAt: new Date().toISOString(), // Use ISO string instead of serverTimestamp in arrays
                 transcript: explanationText || '', // Future: AI transcription
                 likes: 0,
                 isHelpful: false
