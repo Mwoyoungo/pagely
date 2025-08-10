@@ -54,7 +54,8 @@ const Header = ({ currentDocument, onOpenMyDocs, onOpenAuth, currentUser, onBack
       <div className="header-left">
         {currentDocument && onBackToFeed ? (
           <button className="back-btn" onClick={onBackToFeed}>
-            ← Back to Feed
+            <span className="back-arrow">←</span>
+            <span className="back-text">Back to Feed</span>
           </button>
         ) : (
           <div className="logo">

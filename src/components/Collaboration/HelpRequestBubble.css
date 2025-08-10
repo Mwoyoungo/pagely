@@ -91,6 +91,29 @@
   border-left: 3px solid #ff6b6b;
 }
 
+.specific-request-display {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.specific-request-display strong {
+  color: #4ecdc4;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.specific-question {
+  background: rgba(78, 205, 196, 0.15);
+  padding: 0.6rem;
+  border-radius: 6px;
+  font-style: normal;
+  line-height: 1.4;
+  border-left: 3px solid #4ecdc4;
+  color: #ffffff;
+  font-weight: 500;
+}
+
 .help-actions {
   display: flex;
   justify-content: center;
@@ -153,5 +176,15 @@
     width: 24px;
     height: 24px;
     font-size: 0.8rem;
+  }
+  
+  .specific-question {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .specific-request-display {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
   }
 }

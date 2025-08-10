@@ -39,18 +39,9 @@ const LandingPage = ({ onDocumentUploaded, onShowAuth }) => {
             <span className="brand-name">Collab</span>
           </div>
           <div className="nav-links">
-            <button 
-              className="nav-link"
-              onClick={() => {/* Navigate to features section */}}
-            >
-              Features
-            </button>
-            <button 
-              className="nav-link"
-              onClick={() => {/* Navigate to about section */}}
-            >
-              About
-            </button>
+            <span className="nav-tagline">
+              A universe of collaboration
+            </span>
             <button 
               className="auth-button"
               onClick={onShowAuth}

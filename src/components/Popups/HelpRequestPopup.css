@@ -121,6 +121,109 @@
   font-weight: 500;
 }
 
+/* Specific Request Form */
+.specific-request-form {
+  animation: slideIn 0.3s ease-out;
+}
+
+.specific-request-form h4 {
+  margin-bottom: 0.5rem;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.form-instruction {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+
+.specific-request-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e1e8ed;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 100px;
+  transition: border-color 0.2s;
+}
+
+.specific-request-input:focus {
+  outline: none;
+  border-color: #1da1f2;
+}
+
+.specific-request-input:disabled {
+  background: #f8f9fa;
+  cursor: not-allowed;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.back-btn {
+  background: #f8f9fa;
+  border: 1px solid #e1e8ed;
+  color: #666;
+  padding: 0.75rem 1.25rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+
+.back-btn:hover:not(:disabled) {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.back-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.submit-request-btn {
+  background: #1da1f2;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+
+.submit-request-btn:hover:not(:disabled) {
+  background: #1991da;
+  transform: translateY(-1px);
+}
+
+.submit-request-btn:disabled {
+  background: #adb5bd;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .popup {
@@ -131,5 +234,20 @@
   
   .help-option {
     padding: 1rem;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .back-btn,
+  .submit-request-btn {
+    width: 100%;
+    padding: 0.875rem;
+  }
+  
+  .specific-request-input {
+    font-size: 1rem; /* Prevent zoom on iOS */
   }
 }

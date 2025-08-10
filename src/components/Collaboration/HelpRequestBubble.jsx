@@ -81,6 +81,12 @@ const HelpRequestBubble = ({
             <div className="help-text">
               <strong>Help Requested:</strong>
               <div className="selected-text">"{highlight.text.slice(0, 80)}..."</div>
+              {highlight.specificRequest && (
+                <div className="specific-request-display">
+                  <strong>Student asks:</strong>
+                  <div className="specific-question">"{highlight.specificRequest}"</div>
+                </div>
+              )}
             </div>
             <div className="help-actions">
               <button 

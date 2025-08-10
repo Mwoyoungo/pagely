@@ -20,8 +20,10 @@ pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
 const PDFViewer = ({ document: pdfDocument, onTextSelection, onOpenHelp, onOpenRecord, onVoiceRecorded, onHighlightsChange, isHelperMode }) => {
   const [numPages, setNumPages] = useState(null);
   const [scale, setScale] = useState(() => {
-    // Mobile-first responsive scaling
-    return window.innerWidth <= 768 ? 0.75 : 1.0;
+    // Mobile-first responsive scaling optimized for South African students
+    if (window.innerWidth <= 480) return 0.9; // Larger scale for small phones
+    if (window.innerWidth <= 768) return 0.85; // Improved mobile scale
+    return 1.0;
   });
   const [highlightMode, setHighlightMode] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -194,10 +196,12 @@ const PDFViewer = ({ document: pdfDocument, onTextSelection, onOpenHelp, onOpenR
       const mobile = window.innerWidth <= 768;
       setIsMobile(mobile);
       
-      // Adjust scale for mobile
-      if (mobile && scale > 0.85) {
-        setScale(0.75);
-      } else if (!mobile && scale < 0.85) {
+      // Adjust scale for mobile with improved readability
+      if (window.innerWidth <= 480 && scale < 0.9) {
+        setScale(0.9); // Better scale for small phones
+      } else if (window.innerWidth <= 768 && window.innerWidth > 480 && scale < 0.85) {
+        setScale(0.85); // Improved mobile scale
+      } else if (!mobile && scale < 1.0) {
         setScale(1.0);
       }
     };
@@ -465,11 +469,11 @@ const PDFViewer = ({ document: pdfDocument, onTextSelection, onOpenHelp, onOpenR
       {/* Floating Controls */}
       <div className={`floating-controls ${isMobile ? 'mobile' : ''}`}>
         <div className="zoom-controls">
-          <button onClick={() => setScale(Math.max(isMobile ? 0.5 : 0.6, scale - 0.1))}>
+          <button onClick={() => setScale(Math.max(isMobile ? 0.6 : 0.6, scale - 0.1))}>
             -
           </button>
           <span>{Math.round(scale * 100)}%</span>
-          <button onClick={() => setScale(Math.min(isMobile ? 1.5 : 2, scale + 0.1))}>
+          <button onClick={() => setScale(Math.min(isMobile ? 1.8 : 2, scale + 0.1))}>
             +
           </button>
         </div>

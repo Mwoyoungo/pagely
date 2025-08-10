@@ -156,11 +156,40 @@
   cursor: pointer;
   transition: all 0.2s;
   font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .back-btn:hover {
   background: #e3f2fd;
   border-color: #1da1f2;
+}
+
+.back-arrow {
+  font-size: 1.2rem;
+}
+
+.back-text {
+  font-size: 0.9rem;
+}
+
+/* Hide text on mobile, keep only arrow */
+@media (max-width: 768px) {
+  .back-text {
+    display: none;
+  }
+  
+  .back-btn {
+    padding: 8px;
+    min-width: 40px;
+    justify-content: center;
+    border-radius: 50%;
+  }
+  
+  .back-arrow {
+    font-size: 1.4rem;
+  }
 }
 
 /* Mobile Collaborators */

@@ -6,7 +6,7 @@
   overflow-x: hidden;
   font-family: 'Inter', sans-serif;
   position: relative;
-  z-index: 1;
+  z-index: 0; /* Lower z-index to ensure 3D background stays behind */
 }
 
 /* Navigation */
@@ -15,7 +15,7 @@
   top: 0;
   left: 0;
   right: 0;
-  z-index: 50;
+  z-index: 50; /* High z-index for navigation */
   background: rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(18px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -78,6 +78,14 @@
   color: white;
 }
 
+.nav-tagline {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  font-weight: 500;
+  font-style: italic;
+  letter-spacing: 0.5px;
+}
+
 .auth-button {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -103,6 +111,8 @@
   padding-top: 96px;
   padding-left: 24px;
   padding-right: 24px;
+  position: relative;
+  z-index: 10; /* Ensure hero content appears above 3D background */
 }
 
 .hero-container {
@@ -113,6 +123,8 @@
   grid-template-columns: 1fr 1fr;
   gap: 64px;
   align-items: center;
+  position: relative;
+  z-index: 1; /* Ensure container content is properly layered */
 }
 
 .hero-content {
@@ -459,6 +471,10 @@
 @media (max-width: 768px) {
   .nav-links .nav-link {
     display: none;
+  }
+  
+  .nav-tagline {
+    display: none; /* Hide tagline on mobile to save space */
   }
 
   .hero-container {

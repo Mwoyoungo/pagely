@@ -336,10 +336,11 @@
   min-width: 50px;
 }
 
-/* Mobile adjustments */
+/* Mobile adjustments - Optimized for South African students using phones */
 @media (max-width: 768px) {
   .pdf-viewer {
     background: #ffffff;
+    padding: 0; /* Remove padding to maximize space */
   }
   
   .floating-controls {
@@ -348,13 +349,18 @@
     gap: 0.75rem;
   }
   
+  .pdf-document-container {
+    padding: 0.5rem 0; /* Minimal vertical padding */
+  }
+  
   .pdf-pages-container {
-    gap: 1.5rem;
-    padding: 0 0.75rem;
+    gap: 1rem; /* Reduce gap between pages */
+    padding: 0 0.25rem; /* Minimal horizontal padding for maximum width */
   }
   
   .pdf-page-wrapper {
     max-width: 100%;
+    width: 100%; /* Force full width */
   }
   
   .page-number-label {
@@ -366,23 +372,38 @@
   .pdf-page-container {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
     border-radius: 8px;
+    width: 100%; /* Maximize width */
+    max-width: 100vw; /* Use full viewport width */
+  }
+  
+  .pdf-page-container .react-pdf__Page {
+    width: 100% !important; /* Force page to take full width */
+    max-width: none !important;
   }
   
   .pdf-page-container .react-pdf__Page canvas {
     border-radius: 8px;
-    max-width: 100%;
+    width: 100% !important; /* Maximize PDF canvas width */
+    max-width: none !important;
     height: auto;
   }
   
-  /* Mobile touch optimizations */
+  /* Enhanced text layer for better mobile readability */
+  .pdf-page-container .react-pdf__Page__textContent {
+    width: 100% !important;
+  }
+  
+  /* Mobile touch optimizations with larger touch targets */
   .pdf-page-container .react-pdf__Page__textContent span {
-    min-height: 18px; /* Larger touch targets for text selection */
+    min-height: 20px; /* Larger touch targets for easier text selection */
+    line-height: 1.3; /* Better line spacing for readability */
   }
   
   /* Adjust highlight sizes for mobile precision */
   .highlight {
-    min-height: 20px;
+    min-height: 22px; /* Slightly larger for easier interaction */
     border-radius: 3px;
+    opacity: 0.8; /* Slightly more transparent for better text visibility */
   }
   
   /* Mobile notification positioning */
@@ -394,11 +415,17 @@
   }
 }
 
-/* Extra small screens */
+/* Extra small screens - Maximum readability for phones */
 @media (max-width: 480px) {
   .pdf-pages-container {
-    gap: 1rem;
-    padding: 0 0.5rem;
+    gap: 0.75rem; /* Even smaller gaps for more content visibility */
+    padding: 0 0.1rem; /* Absolute minimum padding */
+  }
+  
+  .pdf-page-container {
+    margin: 0 -0.1rem; /* Slight negative margin to use every pixel */
+    width: calc(100vw - 0.2rem); /* Use almost full viewport width */
+    max-width: calc(100vw - 0.2rem);
   }
   
   .floating-controls {

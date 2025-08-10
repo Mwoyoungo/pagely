@@ -173,6 +173,9 @@ const Highlight = ({
                 <div className="voice-count">
                   🎵 {highlight.voiceExplanations.length} explanation{highlight.voiceExplanations.length > 1 ? 's' : ''}
                 </div>
+                <div className="voice-author">
+                  by {highlight.voiceExplanations[0]?.authorName || 'Anonymous'}
+                </div>
                 <div className="play-instruction">
                   {isPlaying ? '🔊 Playing...' : '🎵 Click to hear explanation'}
                 </div>
