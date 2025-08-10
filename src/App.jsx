@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from './components/UI/Header';
+import LandingPage from './components/Landing/LandingPage';
 import PDFUpload from './components/PDF/PDFUpload';
 import PDFViewer from './components/PDF/PDFViewer';
-import FloatingToolbar from './components/UI/FloatingToolbar';
-import DemoControls from './components/UI/DemoControls';
+import FloatingActionButton from './components/UI/FloatingActionButton';
 import MyDocumentsPopup from './components/Popups/MyDocumentsPopup';
 import HelpRequestPopup from './components/Popups/HelpRequestPopup';
 import RecordingPopup from './components/Popups/RecordingPopup';
@@ -13,6 +13,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AuthModal from './components/Auth/AuthModal';
 import UserProfile from './components/Auth/UserProfile';
 import PublicFeed from './components/Feed/PublicFeed';
+import analyticsService from './services/analyticsService';
 
 function AppContent() {
   const [currentDocument, setCurrentDocument] = useState(null);
@@ -25,15 +26,48 @@ function AppContent() {
   const [currentHighlights, setCurrentHighlights] = useState([]);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showUploadMode, setShowUploadMode] = useState(false);
+  const [showLanding, setShowLanding] = useState(true);
   const { showNotification } = useNotifications();
   const { currentUser } = useAuth();
+
+  // Track page views and user actions
+  useEffect(() => {
+    analyticsService.trackPageView('app_load');
+  }, []);
+
+  useEffect(() => {
+    if (currentDocument) {
+      analyticsService.trackPageView('pdf_viewer');
+      analyticsService.trackDocumentOpen(currentDocument.id, 'app');
+    } else if (showUploadMode) {
+      analyticsService.trackPageView('upload');
+    } else {
+      analyticsService.trackPageView('feed');
+    }
+  }, [currentDocument, showUploadMode]);
+
+  useEffect(() => {
+    if (currentUser) {
+      analyticsService.track('user_session_start', {
+        userId: currentUser.uid,
+        userEmail: currentUser.email
+      });
+      // Hide landing page for authenticated users
+      setShowLanding(false);
+    } else {
+      // Show landing page for unauthenticated users
+      setShowLanding(true);
+    }
+  }, [currentUser]);
 
   const handleDocumentUploaded = (docData) => {
     setCurrentDocument(docData);
     setShowUploadMode(false); // Return to feed after upload
+    setShowLanding(false); // Hide landing page when document is loaded
   };
 
   const handleShowUpload = () => {
+    analyticsService.trackFeatureUsage('upload_button', 'click');
     setShowUploadMode(true);
   };
 
@@ -43,6 +77,7 @@ function AppContent() {
     } else {
       setCurrentDocument(null);
     }
+    setShowLanding(false); // Always go to main app when navigating
   };
 
   const handleTextSelection = (text, position) => {
@@ -87,6 +122,7 @@ function AppContent() {
   };
 
   const openPopup = (popupType) => {
+    analyticsService.trackFeatureUsage(`${popupType}_popup`, 'open');
     setActivePopup(popupType);
   };
 
@@ -95,6 +131,7 @@ function AppContent() {
   };
 
   const handleToggleDemoMode = (helperMode) => {
+    analyticsService.trackFeatureUsage('demo_mode', helperMode ? 'helper_mode' : 'student_mode');
     setIsHelperMode(helperMode);
     if (helperMode) {
       showNotification('👨‍🎓 You are now Student B (Helper) - Look for help request bubbles!', 'info');
@@ -119,6 +156,22 @@ function AppContent() {
     }
   };
 
+  // Show landing page for new users
+  if (showLanding && !currentDocument && !showUploadMode) {
+    return (
+      <>
+        <LandingPage 
+          onDocumentUploaded={handleDocumentUploaded}
+          onShowAuth={() => setShowAuthModal(true)}
+        />
+        <AuthModal 
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+        />
+      </>
+    );
+  }
+
   return (
     <div className="app">
         <Header 
@@ -129,7 +182,7 @@ function AppContent() {
           onBackToFeed={handleBackToFeed}
         />
         
-        <main className="main-container">
+        <main className={`main-container ${currentDocument ? 'pdf-view' : 'feed-view'}`}>
           {currentDocument ? (
             <>
               <PDFViewer 
@@ -141,12 +194,10 @@ function AppContent() {
                 onHighlightsChange={setCurrentHighlights}
                 isHelperMode={isHelperMode}
               />
-              <FloatingToolbar 
+              <FloatingActionButton 
                 onOpenHelp={() => openPopup('help')}
                 onOpenRecord={() => openPopup('record')}
                 onExportStudyNotes={handleExportStudyNotes}
-              />
-              <DemoControls 
                 onToggleMode={handleToggleDemoMode}
                 isHelperMode={isHelperMode}
               />

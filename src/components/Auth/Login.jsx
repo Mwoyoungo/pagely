@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
+import analyticsService from '../../services/analyticsService';
 import './Auth.css';
 
 const Login = ({ onSwitchToSignup, onClose }) => {
@@ -22,6 +23,7 @@ const Login = ({ onSwitchToSignup, onClose }) => {
     
     try {
       await signin(email, password);
+      analyticsService.trackUserSignin('email');
       showNotification('Welcome back to PagePop!', 'success');
       onClose();
     } catch (error) {
@@ -49,6 +51,7 @@ const Login = ({ onSwitchToSignup, onClose }) => {
     
     try {
       await signinWithGoogle();
+      analyticsService.trackUserSignin('google');
       showNotification('Welcome to PagePop!', 'success');
       onClose();
     } catch (error) {

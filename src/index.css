@@ -6,7 +6,7 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   background: #f5f7fa;
   min-height: 100vh;
   color: #333;
@@ -21,8 +21,15 @@ body {
 
 .main-container {
   display: flex;
-  min-height: calc(100vh - 80px);
+  min-height: calc(100vh - 60px);
   flex: 1;
+}
+
+.main-container.pdf-view {
+  overflow: hidden;
+}
+
+.main-container.feed-view {
   overflow-y: auto;
 }
 
@@ -127,14 +134,55 @@ button:active {
   50% { transform: scale(1.1); }
 }
 
-/* Responsive */
+/* Mobile optimizations */
 @media (max-width: 768px) {
+  body {
+    -webkit-text-size-adjust: 100%;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
+  /* Allow text selection in PDF content only */
+  .pdf-page-container {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+  }
+
   .main-container {
     flex-direction: column;
   }
   
-  .floating-toolbar {
-    bottom: 1rem;
-    right: 1rem;
+  /* Improve touch targets */
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Better mobile scrolling */
+  .main-container.feed-view {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  .pdf-viewer {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  .app {
+    font-size: 14px;
+  }
+  
+  /* Reduce margins on small screens */
+  .loading {
+    height: 150px;
+    font-size: 0.9rem;
   }
 }

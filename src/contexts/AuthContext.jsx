@@ -85,6 +85,10 @@ export const AuthProvider = ({ children }) => {
         helpReceived: 0,
         totalStudyHours: 0,
         
+        // User roles
+        isAdmin: false,
+        isTeacher: false,
+        
         // Personal documents
         myDocuments: [],
         recentDocuments: [],

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import DocumentService from '../../services/documentService';
+import EmptyState from '../UI/EmptyState';
 import './PublicFeed.css';
 
 const PublicFeed = ({ onDocumentSelect, onUploadDocument }) => {
@@ -237,12 +238,26 @@ const PublicFeed = ({ onDocumentSelect, onUploadDocument }) => {
             </div>
           ))}
         </div>
+      ) : searchTerm || selectedSubject !== 'all' ? (
+        <EmptyState
+          icon="🔍"
+          title="No documents found"
+          description="Try adjusting your search filters or explore different subjects."
+          actionText="Clear Filters"
+          onAction={() => {
+            setSearchTerm('');
+            setSelectedSubject('all');
+          }}
+        />
       ) : (
-        <div className="empty-state">
-          <div className="empty-icon">🔍</div>
-          <h3>No documents found</h3>
-          <p>Try adjusting your search or upload a new document to get started!</p>
-        </div>
+        <EmptyState
+          icon="📚"
+          title="Welcome to PagePop!"
+          description="No documents available yet. Be the first to share a study document with the community."
+          actionText="📄 Upload Your First Document"
+          onAction={onUploadDocument}
+          size="large"
+        />
       )}
     </div>
   );

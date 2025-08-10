@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import DocumentService from '../../services/documentService';
+import EmptyState from '../UI/EmptyState';
+import analyticsService from '../../services/analyticsService';
 import './MyDocumentsPopup.css';
 
 const MyDocumentsPopup = ({ isOpen, onClose, onDocumentSelect }) => {
@@ -9,6 +11,7 @@ const MyDocumentsPopup = ({ isOpen, onClose, onDocumentSelect }) => {
   const { currentUser } = useAuth();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [deletingDoc, setDeletingDoc] = useState(null);
 
   // Load user's documents when popup opens
   useEffect(() => {
@@ -99,6 +102,37 @@ const MyDocumentsPopup = ({ isOpen, onClose, onDocumentSelect }) => {
     showNotification(`Loading ${doc.title}...`, 'info');
   };
 
+  const handleDeleteDocument = async (docId, docTitle) => {
+    if (!currentUser) return;
+    
+    // Confirm deletion
+    if (!window.confirm(`Are you sure you want to delete "${docTitle}"? This action cannot be undone and will remove all highlights and voice explanations.`)) {
+      return;
+    }
+    
+    setDeletingDoc(docId);
+    
+    try {
+      await DocumentService.deleteDocument(docId, currentUser.uid);
+      
+      // Track analytics
+      analyticsService.track('document_delete', {
+        documentId: docId,
+        userId: currentUser.uid
+      });
+      
+      // Remove from local state
+      setDocuments(prev => prev.filter(doc => doc.id !== docId));
+      
+      showNotification(`Document "${docTitle}" deleted successfully`, 'success');
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      showNotification(error.message || 'Failed to delete document', 'error');
+    } finally {
+      setDeletingDoc(null);
+    }
+  };
+
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) {
       onClose();
@@ -127,33 +161,54 @@ const MyDocumentsPopup = ({ isOpen, onClose, onDocumentSelect }) => {
               <div 
                 key={doc.id}
                 className="doc-item"
-                onClick={() => loadDocument(doc)}
               >
-                <div className="doc-icon">📄</div>
-                <div className="doc-info">
-                  <div className="doc-title">{doc.title}</div>
-                  <div className="doc-meta">
-                    Last activity: {formatDate(doc.lastActivity)}<br />
-                    {doc.totalHighlights || 0} highlights • {formatFileSize(doc.fileSize || 0)}
-                  </div>
-                  <div className="doc-stats">
-                    {doc.activeCollaborators > 1 && (
-                      <span className="collaborators">👥 {doc.activeCollaborators} collaborators</span>
-                    )}
-                    {doc.helpRequestsOpen > 0 && (
-                      <span className="help-requests">❓ {doc.helpRequestsOpen} help requests</span>
-                    )}
+                <div className="doc-main" onClick={() => loadDocument(doc)}>
+                  <div className="doc-icon">📄</div>
+                  <div className="doc-info">
+                    <div className="doc-title">{doc.title}</div>
+                    <div className="doc-meta">
+                      Last activity: {formatDate(doc.lastActivity)}<br />
+                      {doc.totalHighlights || 0} highlights • {formatFileSize(doc.fileSize || 0)}
+                    </div>
+                    <div className="doc-stats">
+                      {doc.activeCollaborators > 1 && (
+                        <span className="collaborators">👥 {doc.activeCollaborators} collaborators</span>
+                      )}
+                      {doc.helpRequestsOpen > 0 && (
+                        <span className="help-requests">❓ {doc.helpRequestsOpen} help requests</span>
+                      )}
+                    </div>
                   </div>
                 </div>
+                
+                {/* Delete button for document owners */}
+                {doc.uploadedBy === currentUser?.uid && (
+                  <button
+                    className="delete-doc-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteDocument(doc.id, doc.title);
+                    }}
+                    disabled={deletingDoc === doc.id}
+                    title="Delete document"
+                  >
+                    {deletingDoc === doc.id ? '⏳' : '🗑️'}
+                  </button>
+                )}
               </div>
             ))}
           </div>
         ) : (
-          <div className="empty-state">
-            <div className="empty-icon">📚</div>
-            <h4>No documents yet</h4>
-            <p>Upload your first PDF to start collaborative learning!</p>
-          </div>
+          <EmptyState
+            icon="📚"
+            title="No documents yet"
+            description="Upload your first PDF to start collaborative learning!"
+            actionText="Upload New Document"
+            onAction={() => {
+              onClose();
+              showNotification('Click "Upload" to add a new document', 'info');
+            }}
+          />
         )}
         
         <div className="upload-new">

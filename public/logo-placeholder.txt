@@ -1,0 +1,17 @@
+Logo Placeholder
+================
+
+To add your logo:
+1. Add your logo.png file to the src/assets/ folder
+2. Update the import paths in:
+   - src/components/UI/Header.jsx
+   - src/components/Landing/LandingPage.jsx
+
+Change:
+  <div className="logo-placeholder">📚</div>
+
+To:
+  import logoImg from '../../assets/logo.png';
+  <img src={logoImg} alt="Collab" className="logo-image" />
+
+Recommended logo size: 64x64px (will be scaled to 24x24px in header)

@@ -2,6 +2,8 @@ import { useState, useRef } from 'react';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import DocumentService from '../../services/documentService';
+import SuccessAnimation from '../UI/SuccessAnimation';
+import analyticsService from '../../services/analyticsService';
 import './PDFUpload.css';
 
 // Create a simple mock audio URL for demo purposes
@@ -14,14 +16,56 @@ const createMockAudio = () => {
 const PDFUpload = ({ onDocumentUploaded }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [showSuccess, setShowSuccess] = useState(false);
   const fileInputRef = useRef(null);
   const { showNotification } = useNotifications();
   const { currentUser } = useAuth();
 
+  const validateFile = (file) => {
+    // Check if file exists
+    if (!file) {
+      return { isValid: false, message: 'No file selected' };
+    }
+
+    // Check file type
+    const allowedTypes = ['application/pdf'];
+    if (!allowedTypes.includes(file.type)) {
+      return { 
+        isValid: false, 
+        message: 'Only PDF files are allowed. Please select a .pdf file.' 
+      };
+    }
+
+    // Check file size (50MB limit)
+    const maxSize = 50 * 1024 * 1024; // 50MB in bytes
+    if (file.size > maxSize) {
+      return { 
+        isValid: false, 
+        message: `File size too large. Maximum size is 50MB. Your file is ${(file.size / 1024 / 1024).toFixed(1)}MB.` 
+      };
+    }
+
+    // Check minimum size (1KB to avoid empty files)
+    const minSize = 1024; // 1KB
+    if (file.size < minSize) {
+      return { 
+        isValid: false, 
+        message: 'File appears to be empty or corrupted. Please select a valid PDF file.' 
+      };
+    }
+
+    return { isValid: true };
+  };
+
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
-    if (!file || file.type !== 'application/pdf') {
-      showNotification('Please select a PDF file', 'error');
+    
+    // Validate file
+    const validation = validateFile(file);
+    if (!validation.isValid) {
+      showNotification(validation.message, 'error');
+      // Clear the input so user can select again
+      event.target.value = '';
       return;
     }
 
@@ -42,6 +86,9 @@ const PDFUpload = ({ onDocumentUploaded }) => {
         tags: [] // TODO: Add tags input UI
       };
 
+      // Track upload start
+      const uploadStartTime = Date.now();
+
       // Upload to Firebase
       const documentData = await DocumentService.uploadDocument(
         file, 
@@ -52,7 +99,12 @@ const PDFUpload = ({ onDocumentUploaded }) => {
         }
       );
 
-      showNotification('Document uploaded successfully!', 'success');
+      // Track successful upload
+      const uploadTime = Date.now() - uploadStartTime;
+      analyticsService.trackDocumentUpload(documentData.id, file.size, uploadTime);
+
+      // Show success animation
+      setShowSuccess(true);
       
       // Convert Firebase document to format expected by PDFViewer
       const viewerDocument = {
@@ -93,7 +145,10 @@ const PDFUpload = ({ onDocumentUploaded }) => {
         ]
       };
 
-      onDocumentUploaded(viewerDocument);
+      // Navigate to document after success animation
+      setTimeout(() => {
+        onDocumentUploaded(viewerDocument);
+      }, 1500);
       
     } catch (error) {
       console.error('Upload error:', error);
@@ -142,6 +197,15 @@ const PDFUpload = ({ onDocumentUploaded }) => {
           disabled={uploading}
         />
       </div>
+
+      {/* Success Animation */}
+      {showSuccess && (
+        <SuccessAnimation 
+          message="PDF uploaded successfully!"
+          onComplete={() => setShowSuccess(false)}
+          duration={1500}
+        />
+      )}
     </div>
   );
 };

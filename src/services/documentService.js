@@ -334,12 +334,51 @@ export class DocumentService {
         throw new Error('Only document owner can delete');
       }
       
-      // Delete file from storage
+      // Delete all highlights for this document
+      const highlightsQuery = query(
+        collection(db, 'highlights'),
+        where('documentId', '==', docId)
+      );
+      const highlightsSnapshot = await getDocs(highlightsQuery);
+      
+      // Delete each highlight and associated voice files
+      const deletePromises = highlightsSnapshot.docs.map(async (highlightDoc) => {
+        const highlight = highlightDoc.data();
+        
+        // Delete voice explanation audio files if they exist
+        if (highlight.voiceExplanations && highlight.voiceExplanations.length > 0) {
+          for (const voice of highlight.voiceExplanations) {
+            if (voice.audioUrl && voice.audioUrl.includes('firebase')) {
+              try {
+                // Extract file path from URL
+                const audioPath = voice.audioUrl.split('/o/')[1].split('?')[0];
+                const audioRef = ref(storage, decodeURIComponent(audioPath));
+                await deleteObject(audioRef);
+              } catch (audioError) {
+                console.warn('Could not delete audio file:', audioError);
+              }
+            }
+          }
+        }
+        
+        // Delete the highlight document
+        return deleteDoc(doc(db, 'highlights', highlightDoc.id));
+      });
+      
+      await Promise.all(deletePromises);
+      
+      // Delete the PDF file from storage
       const storageRef = ref(storage, `documents/${docId}.pdf`);
-      await deleteObject(storageRef);
+      try {
+        await deleteObject(storageRef);
+      } catch (storageError) {
+        console.warn('Could not delete PDF file from storage:', storageError);
+      }
       
       // Delete document metadata
       await deleteDoc(docRef);
+      
+      return { success: true };
       
     } catch (error) {
       console.error('Error deleting document:', error);

@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useNotifications } from '../contexts/NotificationContext';
 import { useAuth } from '../contexts/AuthContext';
 import HighlightService from '../services/highlightService';
+import analyticsService from '../services/analyticsService';
 
 export const useHighlighting = (pdfDocument) => {
   const [highlights, setHighlights] = useState([]);
@@ -101,6 +102,12 @@ export const useHighlighting = (pdfDocument) => {
         currentUser
       );
 
+      // Track analytics
+      analyticsService.trackHighlightCreated(pdfDocument.id, highlight.pageNumber);
+      if (helpRequest) {
+        analyticsService.trackHelpRequest(pdfDocument.id, highlight.pageNumber);
+      }
+
       // Show success notification
       if (helpRequest) {
         showNotification('Help request sent! Other students can now see this and record explanations.', 'success');
@@ -182,6 +189,12 @@ export const useHighlighting = (pdfDocument) => {
           console.log('Voice upload progress:', progress);
         }
       );
+
+      // Track analytics - find the highlight to get page number
+      const highlight = highlights.find(h => h.id === highlightId);
+      if (highlight) {
+        analyticsService.trackVoiceExplanation(pdfDocument.id, highlight.pageNumber, audioBlob.size);
+      }
 
       showNotification('Voice explanation uploaded! Students can now hear your help.', 'success');
     } catch (error) {

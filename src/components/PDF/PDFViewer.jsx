@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
+import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { useHighlighting } from '../../hooks/useHighlighting';
 import InteractionBubble from '../Collaboration/InteractionBubble';
 import HelpRequestBubble from '../Collaboration/HelpRequestBubble';
+import ClassEnrollmentPopup from '../Popups/ClassEnrollmentPopup';
 import Highlight from './Highlight';
+import ClassService from '../../services/classService';
 import './PDFViewer.css';
 
 // Import react-pdf CSS for proper text layer rendering
@@ -16,12 +19,18 @@ pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
 
 const PDFViewer = ({ document: pdfDocument, onTextSelection, onOpenHelp, onOpenRecord, onVoiceRecorded, onHighlightsChange, isHelperMode }) => {
   const [numPages, setNumPages] = useState(null);
-  const [pageNumber, setPageNumber] = useState(1);
-  const [scale, setScale] = useState(1.2);
+  const [scale, setScale] = useState(() => {
+    // Mobile-first responsive scaling
+    return window.innerWidth <= 768 ? 0.75 : 1.0;
+  });
   const [highlightMode, setHighlightMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [showClassEnrollment, setShowClassEnrollment] = useState(false);
+  const [hasShownEnrollment, setHasShownEnrollment] = useState(false);
   const containerRef = useRef(null);
+  const { currentUser } = useAuth();
   const { showNotification } = useNotifications();
   
   // Initialize highlighting system with Firebase integration
@@ -109,7 +118,7 @@ const PDFViewer = ({ document: pdfDocument, onTextSelection, onOpenHelp, onOpenR
     
     // Find the page container element
     const pageElement = containerElement.closest('[data-page-number]');
-    const currentPage = pageElement ? parseInt(pageElement.dataset.pageNumber) : pageNumber;
+    const currentPage = pageElement ? parseInt(pageElement.dataset.pageNumber) : 1;
     
     const selectedText = selection.toString();
     const position = { 
@@ -171,14 +180,76 @@ const PDFViewer = ({ document: pdfDocument, onTextSelection, onOpenHelp, onOpenR
     showNotification(messages[interaction.type] || 'Playing interaction...', 'info');
   };
 
-  // Handle page navigation
-  const goToPrevPage = () => {
-    setPageNumber(prev => Math.max(1, prev - 1));
+  // Scroll to specific page
+  const scrollToPage = (pageNum) => {
+    const pageElement = containerRef.current?.querySelector(`[data-page-number="${pageNum}"]`);
+    if (pageElement) {
+      pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
-  const goToNextPage = () => {
-    setPageNumber(prev => Math.min(numPages, prev + 1));
-  };
+  // Handle resize and mobile detection
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      
+      // Adjust scale for mobile
+      if (mobile && scale > 0.85) {
+        setScale(0.75);
+      } else if (!mobile && scale < 0.85) {
+        setScale(1.0);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [scale]);
+
+  // Add touch gesture support for mobile
+  useEffect(() => {
+    if (!isMobile || !containerRef.current) return;
+
+    let initialDistance = 0;
+    let initialScale = scale;
+
+    const handleTouchStart = (e) => {
+      if (e.touches.length === 2) {
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        initialDistance = Math.sqrt(
+          Math.pow(touch2.clientX - touch1.clientX, 2) + 
+          Math.pow(touch2.clientY - touch1.clientY, 2)
+        );
+        initialScale = scale;
+      }
+    };
+
+    const handleTouchMove = (e) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const currentDistance = Math.sqrt(
+          Math.pow(touch2.clientX - touch1.clientX, 2) + 
+          Math.pow(touch2.clientY - touch1.clientY, 2)
+        );
+        
+        const scaleChange = currentDistance / initialDistance;
+        const newScale = Math.min(1.5, Math.max(0.5, initialScale * scaleChange));
+        setScale(newScale);
+      }
+    };
+
+    const container = containerRef.current;
+    container.addEventListener('touchstart', handleTouchStart, { passive: false });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+
+    return () => {
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+    };
+  }, [isMobile, scale]);
 
   // Add mouseup event listener for text selection
   useEffect(() => {
@@ -189,7 +260,7 @@ const PDFViewer = ({ document: pdfDocument, onTextSelection, onOpenHelp, onOpenR
     const globalDoc = window.document;
     globalDoc.addEventListener('mouseup', handleMouseUp);
     return () => globalDoc.removeEventListener('mouseup', handleMouseUp);
-  }, [highlightMode, pageNumber]);
+  }, [highlightMode]);
 
   // Notify parent when highlights change
   useEffect(() => {
@@ -229,6 +300,30 @@ const PDFViewer = ({ document: pdfDocument, onTextSelection, onOpenHelp, onOpenR
     return () => clearInterval(interval);
   }, [pendingHighlight, saveHighlight, showNotification]);
 
+  // Class enrollment popup timer - show after 120 seconds
+  useEffect(() => {
+    if (!currentUser || !pdfDocument || hasShownEnrollment) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        // Check if user has already requested class for this document
+        const hasRequested = await ClassService.hasUserRequestedClass(currentUser.uid, pdfDocument.id);
+        
+        if (!hasRequested) {
+          setShowClassEnrollment(true);
+          setHasShownEnrollment(true);
+        }
+      } catch (error) {
+        console.error('Error checking class request status:', error);
+        // Still show popup even if check fails
+        setShowClassEnrollment(true);
+        setHasShownEnrollment(true);
+      }
+    }, 120000); // 120 seconds = 2 minutes
+
+    return () => clearTimeout(timer);
+  }, [currentUser, pdfDocument, hasShownEnrollment]);
+
   if (!pdfDocument || !pdfDocument.url) {
     return (
       <div className="pdf-viewer">
@@ -239,52 +334,6 @@ const PDFViewer = ({ document: pdfDocument, onTextSelection, onOpenHelp, onOpenR
 
   return (
     <div className="pdf-viewer" ref={containerRef}>
-      <div className="pdf-controls">
-        {/* Navigation */}
-        <div className="page-navigation">
-          <button 
-            onClick={goToPrevPage}
-            disabled={pageNumber <= 1}
-          >
-            ← Prev
-          </button>
-          <span className="page-info">
-            Page {pageNumber} of {numPages || '?'}
-          </span>
-          <button 
-            onClick={goToNextPage}
-            disabled={pageNumber >= numPages}
-          >
-            Next →
-          </button>
-        </div>
-
-        {/* Zoom Controls */}
-        <div className="zoom-controls">
-          <button onClick={() => setScale(Math.max(0.5, scale - 0.1))}>
-            Zoom Out
-          </button>
-          <span>{Math.round(scale * 100)}%</span>
-          <button onClick={() => setScale(Math.min(3, scale + 0.1))}>
-            Zoom In
-          </button>
-        </div>
-
-        {/* Highlight Mode */}
-        <button 
-          className={`highlight-toggle ${highlightMode ? 'active' : ''}`}
-          onClick={() => {
-            setHighlightMode(!highlightMode);
-            showNotification(
-              highlightMode ? 'Highlight mode disabled' : 'Highlight mode enabled - select text to get help!', 
-              'info'
-            );
-          }}
-        >
-          ✨ {highlightMode ? 'Exit Highlight' : 'Highlight Mode'}
-        </button>
-      </div>
-      
       {loading && <div className="loading">Loading PDF...</div>}
       
       {error && (
@@ -302,109 +351,150 @@ const PDFViewer = ({ document: pdfDocument, onTextSelection, onOpenHelp, onOpenR
           loading={<div className="loading">Loading PDF...</div>}
           error={<div className="error-message">Failed to load PDF</div>}
         >
-          <div className="pdf-page-container" data-page-number={pageNumber}>
-            <Page
-              pageNumber={pageNumber}
-              scale={scale}
-              renderTextLayer={true}
-              renderAnnotationLayer={false}
-              loading={<div className="loading">Loading page...</div>}
-            />
-            
-            {/* Loading indicator for highlights */}
-            {highlightsLoading && (
-              <div className="highlights-loading">
-                <div className="spinner"></div>
-                <span>Loading collaborative highlights...</span>
+          <div className="pdf-pages-container">
+            {Array.from(new Array(numPages), (el, index) => (
+              <div key={index + 1} className="pdf-page-wrapper" data-page-number={index + 1}>
+                <div className="page-number-label">Page {index + 1}</div>
+                <div className="pdf-page-container" data-page-number={index + 1}>
+                  <Page
+                    pageNumber={index + 1}
+                    scale={scale}
+                    renderTextLayer={true}
+                    renderAnnotationLayer={false}
+                    loading={<div className="loading">Loading page...</div>}
+                  />
+                  
+                  {/* Loading indicator for highlights */}
+                  {highlightsLoading && (
+                    <div className="highlights-loading">
+                      <div className="spinner"></div>
+                      <span>Loading highlights...</span>
+                    </div>
+                  )}
+                  
+                  {/* Render highlights for this page */}
+                  {!highlightsLoading && getHighlightsForPage(index + 1)
+                    .filter(highlight => !pendingHighlight || highlight.id !== pendingHighlight.id)
+                    .map(highlight => (
+                    <Highlight
+                      key={highlight.id}
+                      highlight={highlight}
+                      onClick={(h) => showNotification(`Highlight: "${h.text.slice(0, 30)}..."`, 'info')}
+                      onHelpRequest={(h) => {
+                        onTextSelection(h.text, { 
+                          x: h.position.x, 
+                          y: h.position.y,
+                          highlightId: h.id,
+                          pageNumber: h.pageNumber 
+                        });
+                        onOpenHelp();
+                      }}
+                      style={{
+                        left: `${highlight.position.x * 100}%`,
+                        top: `${highlight.position.y * 100}%`,
+                        width: `${highlight.position.width * 100}%`,
+                        height: `${highlight.position.height * 100}%`
+                      }}
+                    />
+                  ))}
+                  
+                  {/* Render pending highlight */}
+                  {pendingHighlight && pendingHighlight.pageNumber === (index + 1) && (
+                    <Highlight
+                      key={pendingHighlight.id}
+                      highlight={pendingHighlight}
+                      isPending={true}
+                      onClick={() => {
+                        onTextSelection(pendingHighlight.text, { 
+                          x: pendingHighlight.position.x, 
+                          y: pendingHighlight.position.y,
+                          highlightId: pendingHighlight.id,
+                          pageNumber: pendingHighlight.pageNumber 
+                        });
+                        onOpenHelp();
+                      }}
+                      style={{
+                        left: `${pendingHighlight.position.x * 100}%`,
+                        top: `${pendingHighlight.position.y * 100}%`,
+                        width: `${pendingHighlight.position.width * 100}%`,
+                        height: `${pendingHighlight.position.height * 100}%`
+                      }}
+                    />
+                  )}
+
+                  {/* Render help request bubbles for highlights needing help (only in helper mode) */}
+                  {isHelperMode && getHighlightsForPage(index + 1)
+                    .filter(highlight => highlight.needsHelp)
+                    .map(highlight => (
+                      <HelpRequestBubble
+                        key={`help-${highlight.id}`}
+                        highlight={highlight}
+                        onRecordHelp={handleRecordHelp}
+                        style={{
+                          left: `${(highlight.position.x + highlight.position.width/2) * 100}%`,
+                          top: `${(highlight.position.y + highlight.position.height/2) * 100}%`
+                        }}
+                      />
+                    ))
+                  }
+
+                  {/* Render interaction bubbles for this page */}
+                  {pdfDocument.interactions
+                    ?.filter(interaction => interaction.pageNumber === (index + 1))
+                    .map(interaction => (
+                      <InteractionBubble
+                        key={interaction.id}
+                        interaction={interaction}
+                        onClick={() => handleInteractionClick(interaction)}
+                        style={{
+                          position: 'absolute',
+                          left: `${interaction.x * 100}%`,
+                          top: `${interaction.y * 100}%`,
+                          transform: 'translate(-50%, -50%)'
+                        }}
+                      />
+                    ))
+                  }
+                </div>
               </div>
-            )}
-            
-            {/* Render highlights for current page */}
-            {!highlightsLoading && getHighlightsForPage(pageNumber)
-              .filter(highlight => !pendingHighlight || highlight.id !== pendingHighlight.id) // Avoid duplicates
-              .map(highlight => (
-              <Highlight
-                key={highlight.id}
-                highlight={highlight}
-                onClick={(h) => showNotification(`Highlight: "${h.text.slice(0, 30)}..."`, 'info')}
-                onHelpRequest={(h) => {
-                  onTextSelection(h.text, { 
-                    x: h.position.x, 
-                    y: h.position.y,
-                    highlightId: h.id,
-                    pageNumber: h.pageNumber 
-                  });
-                  onOpenHelp();
-                }}
-                style={{
-                  left: `${highlight.position.x * 100}%`,
-                  top: `${highlight.position.y * 100}%`,
-                  width: `${highlight.position.width * 100}%`,
-                  height: `${highlight.position.height * 100}%`
-                }}
-              />
             ))}
-            
-            {/* Render pending highlight */}
-            {pendingHighlight && pendingHighlight.pageNumber === pageNumber && (
-              <Highlight
-                key={pendingHighlight.id}
-                highlight={pendingHighlight}
-                isPending={true}
-                onClick={() => {
-                  onTextSelection(pendingHighlight.text, { 
-                    x: pendingHighlight.position.x, 
-                    y: pendingHighlight.position.y,
-                    highlightId: pendingHighlight.id,
-                    pageNumber: pendingHighlight.pageNumber 
-                  });
-                  onOpenHelp();
-                }}
-                style={{
-                  left: `${pendingHighlight.position.x * 100}%`,
-                  top: `${pendingHighlight.position.y * 100}%`,
-                  width: `${pendingHighlight.position.width * 100}%`,
-                  height: `${pendingHighlight.position.height * 100}%`
-                }}
-              />
-            )}
-
-            {/* Render help request bubbles for highlights needing help (only in helper mode) */}
-            {isHelperMode && getHighlightsForPage(pageNumber)
-              .filter(highlight => highlight.needsHelp)
-              .map(highlight => (
-                <HelpRequestBubble
-                  key={`help-${highlight.id}`}
-                  highlight={highlight}
-                  onRecordHelp={handleRecordHelp}
-                  style={{
-                    left: `${(highlight.position.x + highlight.position.width/2) * 100}%`,
-                    top: `${(highlight.position.y + highlight.position.height/2) * 100}%`
-                  }}
-                />
-              ))
-            }
-
-            {/* Render interaction bubbles for current page */}
-            {pdfDocument.interactions
-              ?.filter(interaction => interaction.pageNumber === pageNumber)
-              .map(interaction => (
-                <InteractionBubble
-                  key={interaction.id}
-                  interaction={interaction}
-                  onClick={() => handleInteractionClick(interaction)}
-                  style={{
-                    position: 'absolute',
-                    left: `${interaction.x * 100}%`,
-                    top: `${interaction.y * 100}%`,
-                    transform: 'translate(-50%, -50%)'
-                  }}
-                />
-              ))
-            }
           </div>
         </Document>
       </div>
+
+      {/* Floating Controls */}
+      <div className={`floating-controls ${isMobile ? 'mobile' : ''}`}>
+        <div className="zoom-controls">
+          <button onClick={() => setScale(Math.max(isMobile ? 0.5 : 0.6, scale - 0.1))}>
+            -
+          </button>
+          <span>{Math.round(scale * 100)}%</span>
+          <button onClick={() => setScale(Math.min(isMobile ? 1.5 : 2, scale + 0.1))}>
+            +
+          </button>
+        </div>
+        
+        {/* Page Jump */}
+        {numPages && numPages > 1 && (
+          <div className="page-jump">
+            <select onChange={(e) => scrollToPage(parseInt(e.target.value))}>
+              {Array.from(new Array(numPages), (el, index) => (
+                <option key={index + 1} value={index + 1}>
+                  {isMobile ? `${index + 1}` : `Page ${index + 1}`}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
+      {/* Class Enrollment Popup */}
+      <ClassEnrollmentPopup
+        isOpen={showClassEnrollment}
+        onClose={() => setShowClassEnrollment(false)}
+        documentTitle={pdfDocument?.title || 'Document'}
+        documentId={pdfDocument?.id}
+      />
     </div>
   );
 };

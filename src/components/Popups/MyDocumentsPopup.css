@@ -20,14 +20,22 @@
   padding: 1rem;
   border: 1px solid #e1e8ed;
   border-radius: 8px;
-  cursor: pointer;
   transition: all 0.2s;
+  position: relative;
 }
 
 .doc-item:hover {
   border-color: #1da1f2;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(29, 161, 242, 0.1);
+}
+
+.doc-main {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+  cursor: pointer;
 }
 
 .doc-icon {
@@ -79,6 +87,50 @@
 .upload-new-btn:hover {
   background: #1991da;
   transform: translateY(-1px);
+}
+
+.delete-doc-btn {
+  background: #ff4757;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  opacity: 0.8;
+  min-width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-doc-btn:hover:not(:disabled) {
+  background: #ff3838;
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.delete-doc-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.doc-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.collaborators,
+.help-requests {
+  font-size: 0.75rem;
+  background: #f8f9fa;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  color: #666;
 }
 
 /* Custom scrollbar for doc grid */
