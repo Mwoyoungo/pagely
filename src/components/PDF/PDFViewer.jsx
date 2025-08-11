@@ -31,6 +31,11 @@ const PDFViewer = ({ document: pdfDocument, onTextSelection, onOpenHelp, onOpenR
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [showClassEnrollment, setShowClassEnrollment] = useState(false);
   const [hasShownEnrollment, setHasShownEnrollment] = useState(false);
+  const [textContentCheck, setTextContentCheck] = useState({ 
+    isChecking: false, 
+    hasText: null, 
+    isImageBased: false 
+  });
   const containerRef = useRef(null);
   const { currentUser } = useAuth();
   const { showNotification } = useNotifications();
@@ -72,12 +77,59 @@ const PDFViewer = ({ document: pdfDocument, onTextSelection, onOpenHelp, onOpenR
     }, 100);
   };
 
+  // Check PDF text content for highlighting capability
+  const checkPDFTextContent = async (pdf) => {
+    setTextContentCheck({ isChecking: true, hasText: null, isImageBased: false });
+    
+    try {
+      let totalTextLength = 0;
+      const maxPagesToCheck = Math.min(3, pdf.numPages); // Check first 3 pages or all if less
+      
+      for (let pageNum = 1; pageNum <= maxPagesToCheck; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        
+        const pageText = textContent.items.map(item => item.str).join('').trim();
+        totalTextLength += pageText.length;
+      }
+      
+      const hasText = totalTextLength > 50; // Threshold: at least 50 characters
+      const isImageBased = !hasText;
+      
+      setTextContentCheck({ 
+        isChecking: false, 
+        hasText, 
+        isImageBased 
+      });
+      
+      // Show notification if PDF is image-based
+      if (isImageBased) {
+        setTimeout(() => {
+          showNotification(
+            '⚠️ This PDF appears to be image-based and may not support highlighting. Try converting through Google Docs for full functionality.',
+            'warning',
+            8000 // Show for 8 seconds
+          );
+        }, 2000);
+      }
+      
+    } catch (error) {
+      console.error('Error checking PDF text content:', error);
+      setTextContentCheck({ isChecking: false, hasText: true, isImageBased: false }); // Assume it has text on error
+    }
+  };
+
   // PDF Document handlers
   const onDocumentLoadSuccess = ({ numPages }) => {
     setNumPages(numPages);
     setLoading(false);
     setError(null);
     showNotification(`PDF loaded successfully! ${numPages} pages`, 'success');
+    
+    // Check text content for highlighting capability
+    if (window.pdfjsLib) {
+      window.pdfjsLib.getDocument(pdfDocument.url).promise.then(checkPDFTextContent);
+    }
   };
 
   const onDocumentLoadError = (error) => {
@@ -92,14 +144,31 @@ const PDFViewer = ({ document: pdfDocument, onTextSelection, onOpenHelp, onOpenR
     const selection = window.getSelection();
     if (!selection.toString().trim()) return;
 
-    const range = selection.getRangeAt(0);
+    let range;
+    try {
+      range = selection.getRangeAt(0);
+    } catch (error) {
+      console.log('No range available:', error);
+      return;
+    }
+
     const rect = range.getBoundingClientRect();
     
     // Find the page container for accurate positioning
-    const pageContainer = containerRef.current.querySelector('.pdf-page-container');
+    let pageContainer = containerRef.current?.querySelector('.pdf-page-container');
+    
+    // If not found, try to find the closest page container from the selection
     if (!pageContainer) {
-      console.error('Page container not found');
-      return;
+      let element = range.commonAncestorContainer;
+      if (element.nodeType === Node.TEXT_NODE) {
+        element = element.parentElement;
+      }
+      pageContainer = element.closest('.pdf-page-container');
+      
+      if (!pageContainer) {
+        console.error('Page container not found');
+        return;
+      }
     }
     
     const pageRect = pageContainer.getBoundingClientRect();
@@ -255,16 +324,42 @@ const PDFViewer = ({ document: pdfDocument, onTextSelection, onOpenHelp, onOpenR
     };
   }, [isMobile, scale]);
 
-  // Add mouseup event listener for text selection
+  // Add mouse and touch event listeners for text selection
   useEffect(() => {
     const handleMouseUp = () => {
       setTimeout(handleTextSelection, 10); // Small delay to ensure selection is complete
     };
 
+    const handleTouchEnd = () => {
+      // On mobile, check for selection after touch events
+      setTimeout(() => {
+        const selection = window.getSelection();
+        if (selection && selection.toString().trim()) {
+          handleTextSelection();
+        }
+      }, 100); // Longer delay for mobile to ensure selection is complete
+    };
+
     const globalDoc = window.document;
     globalDoc.addEventListener('mouseup', handleMouseUp);
-    return () => globalDoc.removeEventListener('mouseup', handleMouseUp);
-  }, [highlightMode]);
+    globalDoc.addEventListener('touchend', handleTouchEnd);
+    globalDoc.addEventListener('selectionchange', () => {
+      // Handle selection change events (important for mobile)
+      if (isMobile) {
+        setTimeout(() => {
+          const selection = window.getSelection();
+          if (selection && selection.toString().trim()) {
+            handleTextSelection();
+          }
+        }, 200);
+      }
+    });
+
+    return () => {
+      globalDoc.removeEventListener('mouseup', handleMouseUp);
+      globalDoc.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [highlightMode, isMobile]);
 
   // Notify parent when highlights change
   useEffect(() => {
@@ -344,6 +439,37 @@ const PDFViewer = ({ document: pdfDocument, onTextSelection, onOpenHelp, onOpenR
         <div className="error-message">
           <p>{error}</p>
           <button onClick={() => window.location.reload()}>Retry</button>
+        </div>
+      )}
+      
+      {/* Text content warning */}
+      {textContentCheck.isImageBased && !loading && (
+        <div className="pdf-warning-banner">
+          <div className="warning-content">
+            <span className="warning-icon">⚠️</span>
+            <div className="warning-text">
+              <strong>Limited Highlighting</strong>
+              <p>This PDF is image-based. For full highlighting functionality, try converting it through Google Docs first.</p>
+            </div>
+            <button 
+              className="dismiss-warning"
+              onClick={() => setTextContentCheck(prev => ({ ...prev, isImageBased: false }))}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Mobile highlighting instructions */}
+      {isMobile && !textContentCheck.isImageBased && textContentCheck.hasText && (
+        <div className="mobile-instruction-banner">
+          <div className="instruction-content">
+            <span className="instruction-icon">💡</span>
+            <div className="instruction-text">
+              <strong>Mobile Tip:</strong> Long press on text to select and highlight
+            </div>
+          </div>
         </div>
       )}
 

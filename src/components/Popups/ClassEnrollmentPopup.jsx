@@ -118,7 +118,7 @@ const ClassEnrollmentPopup = ({ isOpen, onClose, documentTitle, documentId }) =>
 
             <div className="pricing-info">
               <div className="price">
-                <span className="currency">₦</span>
+                <span className="currency">R</span>
                 <span className="amount">250</span>
                 <span className="period">/month until exam</span>
               </div>
