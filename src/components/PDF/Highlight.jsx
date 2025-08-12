@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './Highlight.css';
 
 const Highlight = ({ 
@@ -10,6 +10,7 @@ const Highlight = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentAudio, setCurrentAudio] = useState(null);
 
   const handleClick = (e) => {
     e.stopPropagation();
@@ -23,11 +24,20 @@ const Highlight = ({
   };
 
   const playVoiceExplanation = (voiceExplanation) => {
-    if (isPlaying) return; // Prevent multiple plays
+    // If currently playing, pause the audio
+    if (isPlaying && currentAudio) {
+      pauseAudio();
+      return;
+    }
+    
+    // If audio exists and is paused, resume playback
+    if (currentAudio && currentAudio.paused) {
+      resumeAudio();
+      return;
+    }
     
     console.log('🔊 Playing voice explanation for:', highlight.text.slice(0, 30));
     console.log('🔊 Audio URL:', voiceExplanation.audioUrl);
-    setIsPlaying(true);
     
     const audio = new Audio();
     // Set CORS mode to handle cross-origin audio
@@ -44,26 +54,86 @@ const Highlight = ({
     
     audio.onended = () => {
       setIsPlaying(false);
+      setCurrentAudio(null);
       console.log('✅ Voice explanation finished playing');
     };
     
     audio.onerror = (error) => {
       setIsPlaying(false);
+      setCurrentAudio(null);
       console.error('❌ Error playing voice explanation:', error);
       console.error('❌ Audio error details:', audio.error);
+    };
+    
+    audio.onpause = () => {
+      setIsPlaying(false);
+      console.log('⏸️ Audio paused');
+    };
+    
+    audio.onplay = () => {
+      setIsPlaying(true);
+      console.log('▶️ Audio playing');
     };
     
     audio.onloadeddata = () => {
       console.log('📡 Audio data loaded, attempting to play...');
       audio.play().catch(error => {
         setIsPlaying(false);
+        setCurrentAudio(null);
         console.error('❌ Failed to play voice explanation:', error);
       });
     };
     
-    // Start loading the audio
+    // Store audio reference and start loading
+    setCurrentAudio(audio);
     audio.load();
   };
+  
+  const pauseAudio = () => {
+    if (currentAudio && !currentAudio.paused) {
+      currentAudio.pause();
+    }
+  };
+  
+  const resumeAudio = () => {
+    if (currentAudio && currentAudio.paused) {
+      currentAudio.play().catch(error => {
+        console.error('❌ Failed to resume audio:', error);
+        setIsPlaying(false);
+      });
+    }
+  };
+  
+  const stopAudio = () => {
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+      setIsPlaying(false);
+      setCurrentAudio(null);
+    }
+  };
+  
+  // Cleanup audio when component unmounts or page is left
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      stopAudio();
+    };
+    
+    const handlePageHide = () => {
+      stopAudio();
+    };
+    
+    // Add event listeners for page navigation
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handlePageHide);
+    
+    // Cleanup on component unmount
+    return () => {
+      stopAudio();
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handlePageHide);
+    };
+  }, [currentAudio]);
 
   const handleHelpRequest = (e) => {
     e.stopPropagation();
@@ -131,9 +201,9 @@ const Highlight = ({
             animation: isPlaying ? 'pulse 1s infinite' : 'none'
           }}
           onClick={handleClick}
-          title="Click to hear explanation"
+          title={isPlaying ? "Click to pause" : "Click to play explanation"}
         >
-          {isPlaying ? '🔊' : '🎵'}
+          {isPlaying ? '⏸️' : '▶️'}
         </div>
       ) : highlight.needsHelp ? (
         <div
@@ -177,7 +247,7 @@ const Highlight = ({
                   by {highlight.voiceExplanations[0]?.authorName || 'Anonymous'}
                 </div>
                 <div className="play-instruction">
-                  {isPlaying ? '🔊 Playing...' : '🎵 Click to hear explanation'}
+                  {isPlaying ? '⏸️ Playing... (click to pause)' : '▶️ Click to play explanation'}
                 </div>
               </div>
             )}
@@ -195,9 +265,8 @@ const Highlight = ({
                 <button 
                   className="tooltip-btn play-btn"
                   onClick={handleClick}
-                  disabled={isPlaying}
                 >
-                  {isPlaying ? 'Playing...' : '🔊 Play'}
+                  {isPlaying ? '⏸️ Pause' : '▶️ Play'}
                 </button>
               ) : (
                 <button 

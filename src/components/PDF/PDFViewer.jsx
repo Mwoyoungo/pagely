@@ -324,6 +324,38 @@ const PDFViewer = ({ document: pdfDocument, onTextSelection, onOpenHelp, onOpenR
     };
   }, [isMobile, scale]);
 
+  // Global audio cleanup when leaving PDF viewer
+  useEffect(() => {
+    const stopAllAudio = () => {
+      // Stop all audio elements on the page
+      const audioElements = document.querySelectorAll('audio');
+      audioElements.forEach(audio => {
+        if (!audio.paused) {
+          audio.pause();
+          audio.currentTime = 0;
+        }
+      });
+      console.log('🛑 Stopped all audio playback');
+    };
+
+    const handleBeforeUnload = stopAllAudio;
+    const handlePageHide = stopAllAudio;
+    const handleUnload = stopAllAudio;
+    
+    // Add event listeners for various page exit scenarios
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('unload', handleUnload);
+    
+    // Cleanup on component unmount (when navigating away from PDF viewer)
+    return () => {
+      stopAllAudio();
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('unload', handleUnload);
+    };
+  }, []);
+
   // Add mouse and touch event listeners for text selection
   useEffect(() => {
     const handleMouseUp = () => {
